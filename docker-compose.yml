@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: resume-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: resume_analyzer
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    networks:
+      - resume-network
+
+  ai-service:
+    build: ./ai-service
+    container_name: resume-ai-service
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    networks:
+      - resume-network
+    depends_on:
+      - postgres
+
+  backend:
+    build: ./backend
+    container_name: resume-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/resume_analyzer
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+    networks:
+      - resume-network
+    depends_on:
+      - postgres
+      - ai-service
+
+  frontend:
+    build: ./frontend
+    container_name: resume-frontend
+    ports:
+      - "5173:5173"
+    networks:
+      - resume-network
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+
+networks:
+  resume-network:
+    driver: bridge

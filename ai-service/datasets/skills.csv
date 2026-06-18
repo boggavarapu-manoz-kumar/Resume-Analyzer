@@ -1,0 +1,78 @@
+skill_name,category
+Python,Programming Language
+Java,Programming Language
+JavaScript,Programming Language
+TypeScript,Programming Language
+C++,Programming Language
+C#,Programming Language
+Go,Programming Language
+Rust,Programming Language
+Ruby,Programming Language
+HTML,Frontend
+CSS,Frontend
+React,Frontend Framework
+Angular,Frontend Framework
+Vue,Frontend Framework
+Tailwind CSS,Frontend
+Spring Boot,Backend Framework
+FastAPI,Backend Framework
+Django,Backend Framework
+Flask,Backend Framework
+Express,Backend Framework
+SQL,Database
+PostgreSQL,Database
+MySQL,Database
+MongoDB,Database
+Redis,Database
+Docker,DevOps
+Kubernetes,DevOps
+AWS,Cloud
+GCP,Cloud
+Azure,Cloud
+Git,Tool
+GitHub,Tool
+Jira,Tool
+Machine Learning,AI/ML
+Deep Learning,AI/ML
+NLP,AI/ML
+Natural Language Processing,AI/ML
+SpaCy,AI/ML
+NLTK,AI/ML
+Scikit-learn,AI/ML
+PyTorch,AI/ML
+TensorFlow,AI/ML
+Keras,AI/ML
+Pandas,Data Science
+NumPy,Data Science
+Tableau,Data Science
+Power BI,Data Science
+Docker,DevOps
+CI/CD,DevOps
+Jenkins,DevOps
+Terraform,DevOps
+REST APIs,Backend
+Microservices,Backend
+GraphQL,Backend
+JUnit,Testing
+Selenium,Testing
+Jest,Testing
+JWT,Security
+OAuth,Security
+BCrypt,Security
+Linux,Operating System
+Unix,Operating System
+Bash,Scripting
+Shell Scripting,Scripting
+XML,Data Format
+JSON,Data Format
+YAML,Data Format
+Webpack,Build Tool
+Maven,Build Tool
+Gradle,Build Tool
+Node.js,Runtime
+Next.js,Frontend Framework
+Redux,State Management
+Bootstrap,Frontend
+Figma,Design
+Agile,Methodology
+Scrum,Methodology

@@ -1,0 +1,64 @@
+# Node / Frontend
+node_modules/
+dist/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Java / Spring Boot Backend
+target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/
+.gradle/
+build/
+.metadata/
+bin/
+tmp/
+*.db
+
+# Python / AI Service
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+.ipynb_checkpoints/
+*.pkl
+models/*.pkl
+
+# Databases
+database/data/
+pgdata/
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+out/
+
+# ===== LARGE BINARIES & TARBALLS (MUST EXCLUDE) =====
+*.tar.gz
+*.tar
+*.zip
+jdk-*/
+apache-maven-*/
+openjdk-*
