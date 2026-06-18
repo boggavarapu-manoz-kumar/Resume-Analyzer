@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../utils/constants';
 import api from '../../services/api';
-import { FileUp, Target, Briefcase, Zap, BrainCircuit, BarChart } from 'lucide-react';
+import { FileUp, Target, Briefcase, Zap, BrainCircuit, BarChart, MessageSquare } from 'lucide-react';
 
 const Dashboard = () => {
   const [resumes, setResumes] = useState([]);
@@ -76,7 +76,7 @@ const Dashboard = () => {
         </div>
 
         {/* Core Feature 3 */}
-        <div className="bento-card animate-fade-up stagger-4" style={{ gridColumn: 'span 6', minHeight: '250px' }} onClick={() => navigate(ROUTES.SKILL_GAP)}>
+        <div className="bento-card animate-fade-up stagger-4" style={{ gridColumn: 'span 4', minHeight: '250px' }} onClick={() => navigate(ROUTES.SKILL_GAP)}>
           <div className="bento-icon-wrapper" style={{ color: '#3b82f6' }}>
             <Target size={24} />
           </div>
@@ -85,7 +85,16 @@ const Dashboard = () => {
         </div>
 
         {/* Core Feature 4 */}
-        <div className="bento-card animate-fade-up stagger-4" style={{ gridColumn: 'span 6', minHeight: '250px' }} onClick={() => navigate(ROUTES.CAREER_ROADMAP)}>
+        <div className="bento-card animate-fade-up stagger-5" style={{ gridColumn: 'span 4', minHeight: '250px' }} onClick={() => navigate(ROUTES.MOCK_INTERVIEW)}>
+          <div className="bento-icon-wrapper" style={{ color: '#ec4899' }}>
+            <MessageSquare size={24} />
+          </div>
+          <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Mock Interview Coach</h3>
+          <p>Practice tailored interview questions curated by AI specifically for your profile.</p>
+        </div>
+
+        {/* Core Feature 5 */}
+        <div className="bento-card animate-fade-up stagger-6" style={{ gridColumn: 'span 4', minHeight: '250px' }} onClick={() => navigate(ROUTES.CAREER_ROADMAP)}>
           <div className="bento-icon-wrapper" style={{ color: '#f59e0b' }}>
             <BarChart size={24} />
           </div>
