@@ -20,4 +20,5 @@ export const ROUTES = {
   MOCK_INTERVIEW: '/mock-interview',
   CAREER_ROADMAP: '/career-roadmap',
   PROFILE: '/profile',
+  PRICING: '/pricing',
 };

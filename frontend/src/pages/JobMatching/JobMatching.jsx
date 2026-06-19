@@ -42,65 +42,58 @@ const JobMatching = () => {
     fetchJobs();
   }, [navigate]);
 
-  if (loading) return <LoadingSpinner text="Finding the best jobs for you..." />;
+  if (loading) return <LoadingSpinner text="Looking for your perfect job..." />;
 
   return (
-    <div className="chat-container">
-      {/* AI Intro Message */}
-      <div className="ai-message">
-        <div className="ai-avatar">AI</div>
-        <div className="ai-content">
-          <p>I have scanned available roles that match your extracted skills and experience.</p>
-          {error && (
-            <p style={{ color: 'var(--color-text-secondary)', backgroundColor: '#fffbeb', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid #fde68a', marginTop: '0.5rem' }}>
-              {error}
-            </p>
-          )}
-          {!error && jobs.length === 0 && (
-            <p style={{ marginTop: '0.5rem' }}>Unfortunately, I couldn't find any perfect matches right now. Try expanding your skills or check back later.</p>
-          )}
-          {!error && jobs.length > 0 && (
-            <p style={{ marginTop: '0.5rem' }}>Here are the top matches I found for you:</p>
-          )}
-        </div>
+    <div className="flex-col gap-lg max-w-4xl mx-auto" style={{ paddingBottom: 'var(--spacing-3xl)' }}>
+      <div className="text-center animate-fade-up stagger-1" style={{ marginTop: '2rem', marginBottom: '1rem' }}>
+        <h1 className="hero-title" style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>Your Job Matches</h1>
+        <p className="hero-subtitle" style={{ fontSize: '1.1rem', margin: 0 }}>We found these jobs that fit your skills perfectly.</p>
       </div>
 
-      {/* Jobs List (Rendered as AI follow-up) */}
+      {error && (
+        <div className="bento-card animate-fade-up stagger-2" style={{ padding: '1.5rem', textAlign: 'center', borderColor: 'var(--color-danger)' }}>
+          <p style={{ color: 'var(--color-danger)', margin: 0, fontSize: '1.1rem' }}>{error}</p>
+        </div>
+      )}
+
+      {!error && jobs.length === 0 && (
+        <div className="bento-card animate-fade-up stagger-2" style={{ padding: '2rem', textAlign: 'center' }}>
+          <p style={{ fontSize: '1.1rem', margin: 0 }}>We couldn't find any perfect matches right now. Try learning some new skills or check back later.</p>
+        </div>
+      )}
+
+      {/* Jobs List */}
       {!error && jobs.length > 0 && (
-        <div className="ai-message">
-          <div className="ai-avatar" style={{ backgroundColor: 'transparent' }}></div>
-          <div className="ai-content">
-            <div className="flex-col gap-lg">
-              {jobs.map((job, idx) => (
-                <div key={job.job_id || idx} style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '1.25rem', backgroundColor: 'var(--color-bg-primary)' }}>
-                  <div className="flex justify-between items-start mb-sm">
-                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{job.title}</h3>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-accent)' }}>Match: {(job.match_score * 100).toFixed(0)}%</span>
-                  </div>
-                  <p style={{ fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.75rem', fontSize: '0.95rem' }}>{job.company}</p>
-                  <p style={{ fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1rem', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {job.description}
-                  </p>
-                  
-                  <div style={{ marginBottom: '1rem' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.25rem' }}>Key Skills Required:</p>
-                    <div className="flex" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
-                      {job.required_skills?.split(',').slice(0, 5).map(skill => (
-                        <span key={skill} style={{ backgroundColor: 'var(--color-bg-secondary)', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', border: '1px solid var(--color-border)' }}>
-                          {skill.trim()}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-sm">
-                    <button className="btn btn-primary">Apply Now</button>
-                    <button className="btn btn-secondary">Save Job</button>
-                  </div>
+        <div className="flex-col gap-lg animate-fade-up stagger-3">
+          {jobs.map((job, idx) => (
+            <div key={job.job_id || idx} className="bento-card" style={{ padding: '2rem' }}>
+              <div className="flex justify-between items-start mb-sm">
+                <h3 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--color-text-primary)' }}>{job.title}</h3>
+                <span className="badge badge-success" style={{ fontSize: '1rem' }}>Match: {(job.match_score * 100).toFixed(0)}%</span>
+              </div>
+              <p style={{ fontWeight: 500, color: 'var(--color-accent)', marginBottom: '1rem', fontSize: '1.1rem' }}>{job.company}</p>
+              <p style={{ fontSize: '1.05rem', lineHeight: 1.6, marginBottom: '1.5rem', color: 'var(--color-text-secondary)' }}>
+                {job.description}
+              </p>
+              
+              <div style={{ marginBottom: '1.5rem' }}>
+                <p style={{ fontSize: '0.95rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--color-text-primary)' }}>Skills they want:</p>
+                <div className="flex" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {job.required_skills?.split(',').slice(0, 5).map(skill => (
+                    <span key={skill} className="badge">
+                      {skill.trim()}
+                    </span>
+                  ))}
                 </div>
-              ))}
+              </div>
+              
+              <div className="flex gap-md">
+                <button className="btn btn-primary" style={{ padding: '0.8rem 2rem' }}>Apply Now</button>
+                <button className="btn btn-secondary">Save for later</button>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       )}
     </div>
