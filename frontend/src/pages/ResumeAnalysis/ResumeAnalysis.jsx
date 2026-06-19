@@ -60,105 +60,82 @@ const ResumeAnalysis = () => {
   };
 
   return (
-    <div className="chat-container">
-      {/* Intro Message */}
-      <div className="ai-message">
-        <div className="ai-avatar">AI</div>
-        <div className="ai-content">
-          <p>I've finished analyzing your resume. Here is my comprehensive feedback based on industry standards.</p>
-        </div>
+    <div className="flex-col gap-lg max-w-3xl mx-auto" style={{ paddingBottom: 'var(--spacing-3xl)' }}>
+      <div className="text-center animate-fade-up stagger-1" style={{ marginTop: '2rem' }}>
+        <h1 className="hero-title" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Your Resume Analysis</h1>
+        <p className="hero-subtitle" style={{ fontSize: '1.1rem', marginTop: '0' }}>Here is what our AI found in your resume.</p>
       </div>
 
       {/* Score Message */}
-      <div className="ai-message">
-        <div className="ai-avatar">AI</div>
-        <div className="ai-content">
-          <h3 style={{ marginTop: 0 }}>Overall Readiness Score: {analysis.overall_score}/100</h3>
-          <p>
-            <strong style={{ color: getScoreColor(analysis.overall_score) }}>
-              {getScoreMessage(analysis.overall_score)}
-            </strong>
-          </p>
-        </div>
+      <div className="bento-card animate-fade-up stagger-2" style={{ padding: '2rem', textAlign: 'center' }}>
+        <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Overall Score: {analysis.overall_score}/100</h3>
+        <p style={{ fontSize: '1.1rem' }}>
+          <strong style={{ color: getScoreColor(analysis.overall_score) }}>
+            {getScoreMessage(analysis.overall_score)}
+          </strong>
+        </p>
       </div>
 
       {/* Summary Message */}
-      <div className="ai-message">
-        <div className="ai-avatar">AI</div>
-        <div className="ai-content">
-          <h3 style={{ marginTop: 0 }}>Recruiter's Summary</h3>
-          <p>{analysis.summary_feedback}</p>
-          
-          <h3>Structural Feedback</h3>
-          <p>{analysis.structural_feedback}</p>
-        </div>
+      <div className="bento-card animate-fade-up stagger-3" style={{ padding: '2rem' }}>
+        <h3 style={{ fontSize: '1.3rem', marginBottom: '0.5rem', color: 'var(--color-primary)' }}>What Recruiters Think</h3>
+        <p style={{ marginBottom: '1.5rem', fontSize: '1.05rem' }}>{analysis.summary_feedback}</p>
+        
+        <h3 style={{ fontSize: '1.3rem', marginBottom: '0.5rem', color: 'var(--color-primary)' }}>How Your Resume Looks</h3>
+        <p style={{ fontSize: '1.05rem' }}>{analysis.structural_feedback}</p>
       </div>
 
       {/* Strengths & Weaknesses */}
-      <div className="ai-message">
-        <div className="ai-avatar">AI</div>
-        <div className="ai-content">
-          <h3 style={{ marginTop: 0 }}>Core Strengths</h3>
-          {analysis.strengths && analysis.strengths.length > 0 ? (
-            <ul>
-              {analysis.strengths.map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
-          ) : (
-            <p>No significant strengths identified.</p>
-          )}
+      <div className="bento-card animate-fade-up stagger-4" style={{ padding: '2rem' }}>
+        <h3 style={{ fontSize: '1.3rem', marginBottom: '1rem', color: 'var(--color-success)' }}>What You Did Well</h3>
+        {analysis.strengths && analysis.strengths.length > 0 ? (
+          <ul style={{ paddingLeft: '1.5rem', marginBottom: '2rem', fontSize: '1.05rem' }}>
+            {analysis.strengths.map((item, idx) => (
+              <li key={idx} style={{ marginBottom: '0.5rem' }}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p style={{ marginBottom: '2rem' }}>No major strengths found yet.</p>
+        )}
 
-          <h3>Areas for Improvement</h3>
-          {analysis.areas_for_improvement && analysis.areas_for_improvement.length > 0 ? (
-            <ul>
-              {analysis.areas_for_improvement.map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
-          ) : (
-            <p>Your resume looks perfect in this area!</p>
-          )}
-        </div>
+        <h3 style={{ fontSize: '1.3rem', marginBottom: '1rem', color: 'var(--color-warning)' }}>What Needs Work</h3>
+        {analysis.areas_for_improvement && analysis.areas_for_improvement.length > 0 ? (
+          <ul style={{ paddingLeft: '1.5rem', fontSize: '1.05rem' }}>
+            {analysis.areas_for_improvement.map((item, idx) => (
+              <li key={idx} style={{ marginBottom: '0.5rem' }}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>Your resume looks perfect in this area!</p>
+        )}
       </div>
 
       {/* Actionable Suggestions */}
       {analysis.missing_keywords && analysis.missing_keywords.length > 0 && (
-        <div className="ai-message">
-          <div className="ai-avatar">AI</div>
-          <div className="ai-content">
-            <h3 style={{ marginTop: 0 }}>Missing Key Competencies</h3>
-            <p>Based on the job description, you should strategically add these missing competencies to your resume:</p>
-            <div className="flex" style={{ gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-              {analysis.missing_keywords.map((kw, idx) => (
-                <span key={idx} style={{ 
-                  backgroundColor: 'var(--color-bg-secondary)', 
-                  padding: '0.25rem 0.75rem', 
-                  borderRadius: 'var(--radius-full)',
-                  fontSize: '0.875rem',
-                  border: '1px solid var(--color-border)'
-                }}>
-                  {kw}
-                </span>
-              ))}
-            </div>
+        <div className="bento-card animate-fade-up stagger-5" style={{ padding: '2rem' }}>
+          <h3 style={{ fontSize: '1.3rem', marginBottom: '0.5rem', color: 'var(--color-accent)' }}>Missing Skills</h3>
+          <p style={{ marginBottom: '1rem', fontSize: '1.05rem' }}>Add these keywords to your resume to match the job description better:</p>
+          <div className="flex" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
+            {analysis.missing_keywords.map((kw, idx) => (
+              <span key={idx} className="badge">
+                {kw}
+              </span>
+            ))}
           </div>
         </div>
       )}
 
       {/* Next Steps */}
-      <div className="ai-message">
-        <div className="ai-avatar">AI</div>
-        <div className="ai-content">
-          <p>Would you like to explore specific job matches based on this profile, or view a detailed skill gap analysis?</p>
-          <div className="flex gap-sm mt-md">
-            <Link to={ROUTES.SKILL_GAP} className="btn btn-primary">
-              View Skill Gap
-            </Link>
-            <Link to={ROUTES.JOB_MATCHING} className="btn btn-secondary">
-              Find Matching Jobs
-            </Link>
-          </div>
+      <div className="bento-card animate-fade-up stagger-6" style={{ padding: '2rem', textAlign: 'center', borderColor: 'var(--color-accent)' }}>
+        <h3 style={{ fontSize: '1.3rem', marginBottom: '1rem' }}>What's Next?</h3>
+        <p style={{ fontSize: '1.05rem', marginBottom: '1.5rem' }}>Do you want to see what jobs fit you best, or learn what skills you need to improve?</p>
+        <div className="flex gap-md justify-center">
+          <Link to={ROUTES.SKILL_GAP} className="btn btn-secondary">
+            See Missing Skills
+          </Link>
+          <Link to={ROUTES.JOB_MATCHING} className="btn btn-primary">
+            Find Matching Jobs
+          </Link>
         </div>
       </div>
     </div>

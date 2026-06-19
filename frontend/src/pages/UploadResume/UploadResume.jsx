@@ -110,15 +110,15 @@ const UploadResume = () => {
   };
 
   return (
-    <div className="flex-col gap-lg max-w-3xl mx-auto">
-      <div>
-        <h1 className="section-title">Upload & Analyze Resume</h1>
-        <p className="section-subtitle">Get instant AI-driven structural feedback and actionable suggestions.</p>
+    <div className="flex-col gap-lg max-w-3xl mx-auto" style={{ paddingBottom: 'var(--spacing-3xl)' }}>
+      <div className="text-center animate-fade-up stagger-1" style={{ marginTop: '2rem' }}>
+        <h1 className="hero-title" style={{ fontSize: '3rem', marginBottom: '1rem' }}>Upload Resume</h1>
+        <p className="hero-subtitle" style={{ fontSize: '1.1rem', marginTop: '0' }}>Let our AI read your resume and tell you how to make it better.</p>
       </div>
 
-      <div className="card">
+      <div className="bento-card animate-fade-up stagger-2">
         {error && (
-          <div className="badge badge-danger mb-md w-full" style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', display: 'block' }}>
+          <div className="badge badge-danger mb-md w-full" style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', display: 'block', textAlign: 'center' }}>
             {error}
           </div>
         )}
@@ -152,15 +152,15 @@ const UploadResume = () => {
               
               {file ? (
                 <div className="text-center">
-                  <h3 style={{ color: 'var(--color-text-primary)', fontSize: '1.1rem' }}>{file.name}</h3>
-                  <p className="text-muted" style={{ fontSize: '0.875rem' }}>
+                  <h3 style={{ color: 'var(--color-text-primary)', fontSize: '1.2rem', marginBottom: '0.2rem' }}>{file.name}</h3>
+                  <p className="text-muted" style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
                     {(file.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 </div>
               ) : (
                 <div className="text-center">
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 500 }}>Upload a new resume</h3>
-                  <p className="text-muted" style={{ fontSize: '0.9rem' }}>Drag & drop a PDF or DOCX file</p>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '0.2rem' }}>Upload your resume</h3>
+                  <p style={{ fontSize: '1rem', color: 'var(--color-text-secondary)' }}>Drag & drop a PDF or Word Document</p>
                 </div>
               )}
             </div>
@@ -198,23 +198,37 @@ const UploadResume = () => {
           )}
         </div>
 
-        <div className="divider"></div>
+        <div style={{ height: '1px', background: 'var(--color-border)', margin: '2rem 0' }}></div>
 
-        <div className="form-group mb-lg">
-          <label className="form-label">Target Job Description (Optional but Recommended)</label>
+        <div className="flex-col gap-sm mb-lg">
+          <label style={{ fontSize: '1.05rem', fontWeight: 500, color: 'var(--color-text-primary)' }}>Job Description (Optional)</label>
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Paste a job description here to see how well you match it.</p>
           <textarea 
-            className="form-input" 
-            placeholder="Paste the job description here to get a tailored analysis..."
+            placeholder="Paste the job description here..."
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}
-            style={{ minHeight: '100px' }}
+            style={{ 
+              minHeight: '120px', 
+              width: '100%', 
+              background: 'rgba(255,255,255,0.03)', 
+              border: '1px solid var(--color-border)', 
+              borderRadius: 'var(--radius-md)', 
+              padding: '1rem',
+              color: 'var(--color-text-primary)',
+              fontFamily: 'inherit',
+              resize: 'vertical',
+              outline: 'none',
+              marginTop: '0.5rem'
+            }}
+            onFocus={(e) => e.target.style.borderColor = 'var(--color-accent)'}
+            onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
           ></textarea>
         </div>
 
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center" style={{ marginTop: '2rem' }}>
           {(file || selectedResumeId) && (
-            <button className="btn btn-ghost" onClick={() => { setFile(null); setSelectedResumeId(null); }}>
-              Clear
+            <button className="btn btn-secondary" onClick={() => { setFile(null); setSelectedResumeId(null); }}>
+              Cancel
             </button>
           )}
           
@@ -222,16 +236,15 @@ const UploadResume = () => {
             className="btn btn-primary" 
             onClick={handleUpload}
             disabled={(!file && !selectedResumeId) || uploading}
-            style={{ marginLeft: 'auto' }}
+            style={{ marginLeft: 'auto', padding: '1rem 2.5rem', fontSize: '1.1rem' }}
           >
             {uploading ? (
               <>
-                <span className="spinner spinner-sm" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></span>
-                Analyzing with AI...
+                <span className="animate-pulse-slow">Thinking...</span>
               </>
             ) : (
               <>
-                Analyze Resume
+                Analyze My Resume
               </>
             )}
           </button>

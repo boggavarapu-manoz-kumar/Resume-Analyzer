@@ -19,7 +19,10 @@ cd ..
 
 echo "Starting Backend..."
 cd backend
-../apache-maven-3.9.6/bin/mvn spring-boot:run &
+set -a
+source ../.env
+set +a
+JAVA_HOME=../jdk-17.0.2.jdk/Contents/Home ../apache-maven-3.9.6/bin/mvn spring-boot:run &
 BACKEND_PID=$!
 cd ..
 
