@@ -8,6 +8,7 @@ import Layout from './components/Layout/Layout';
 import LoadingSpinner from './components/LoadingSpinner/LoadingSpinner';
 
 // Pages
+import Landing from './pages/Landing/Landing';
 import Login from './pages/Login/Login';
 import Register from './pages/Register/Register';
 import Dashboard from './pages/Dashboard/Dashboard';
@@ -33,12 +34,12 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path={ROUTES.HOME} element={<Landing />} />
       <Route path={ROUTES.LOGIN} element={<Login />} />
       <Route path={ROUTES.REGISTER} element={<Register />} />
       
       {/* Protected Routes inside Layout */}
-      <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-        <Route index element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+      <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
         <Route path={ROUTES.UPLOAD} element={<UploadResume />} />
         <Route path={ROUTES.RESUME_ANALYSIS} element={<ResumeAnalysis />} />
@@ -50,7 +51,7 @@ const AppRoutes = () => {
       </Route>
 
       {/* Fallback */}
-      <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+      <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
     </Routes>
   );
 };

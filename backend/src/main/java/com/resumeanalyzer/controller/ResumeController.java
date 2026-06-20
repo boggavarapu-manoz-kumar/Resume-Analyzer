@@ -21,9 +21,11 @@ public class ResumeController {
     public ResponseEntity<Map<String, Object>> uploadResume(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "job_description", required = false) String jobDescription,
+            @RequestParam(value = "experience_level", required = false) String experienceLevel,
+            @RequestParam(value = "target_job", required = false) String targetJob,
             @AuthenticationPrincipal UserDetails userDetails) throws Exception {
 
-        Map<String, Object> result = resumeService.uploadAndAnalyze(file, userDetails.getUsername(), jobDescription);
+        Map<String, Object> result = resumeService.uploadAndAnalyze(file, userDetails.getUsername(), jobDescription, experienceLevel, targetJob);
         return ResponseEntity.ok(result);
     }
 
@@ -34,7 +36,9 @@ public class ResumeController {
             @AuthenticationPrincipal UserDetails userDetails) throws Exception {
 
         String jobDescription = payload != null ? payload.get("job_description") : null;
-        Map<String, Object> result = resumeService.analyzeExistingResume(id, userDetails.getUsername(), jobDescription);
+        String experienceLevel = payload != null ? payload.get("experience_level") : null;
+        String targetJob = payload != null ? payload.get("target_job") : null;
+        Map<String, Object> result = resumeService.analyzeExistingResume(id, userDetails.getUsername(), jobDescription, experienceLevel, targetJob);
         return ResponseEntity.ok(result);
     }
 

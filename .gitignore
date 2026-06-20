@@ -62,3 +62,4 @@ out/
 jdk-*/
 apache-maven-*/
 openjdk-*
+backend/uploads/

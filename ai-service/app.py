@@ -84,12 +84,74 @@ def health_check():
     return {"status": "healthy", "service": "Resume AI Service", "version": "1.0.0"}
 
 
+# ----------- Local Fallback Analysis Engine -----------
+
+def _generate_local_analysis(parsed: dict, skills: list, experience_level: str = None, target_job: str = None) -> dict:
+    """Rule-based resume analysis used as fallback when all AI quota is exhausted."""
+    score = 50
+    strengths = []
+    critical_mistakes = []
+    garbage_to_remove = []
+
+    if parsed.get('email'): score += 5
+    else: critical_mistakes.append("Missing contact email — recruiters cannot reach you.")
+    if parsed.get('phone'): score += 3
+    else: critical_mistakes.append("Missing phone number.")
+    if parsed.get('linkedin'): score += 5; strengths.append("LinkedIn profile is included — great for recruiter outreach.")
+    else: garbage_to_remove.append("Add your LinkedIn URL. Resumes without LinkedIn lose credibility instantly.")
+    if parsed.get('github'): score += 5; strengths.append("GitHub profile is listed — proves you build real things.")
+
+    skill_count = len(skills)
+    if skill_count >= 10: score += 10; strengths.append(f"Strong skill breadth with {skill_count} listed technologies.")
+    elif skill_count >= 5: score += 5; strengths.append(f"{skill_count} skills detected — solid foundation.")
+    else: critical_mistakes.append("Too few skills listed. Add all relevant languages, frameworks, and tools you know.")
+
+    exp = parsed.get('experience', [])
+    if len(exp) >= 3: score += 10; strengths.append("Multiple experience entries show career progression.")
+    elif len(exp) >= 1: score += 5
+    else: critical_mistakes.append("No work experience detected. Add internships, freelance work, or projects.")
+
+    if parsed.get('education'): score += 5; strengths.append("Education section is present.")
+    else: critical_mistakes.append("Education section is missing or not detected.")
+
+    garbage_to_remove.append("Remove vague phrases like 'team player', 'hard worker', 'passionate' — they add no value.")
+    garbage_to_remove.append("Remove 'References available upon request' — always assumed, wastes space.")
+
+    immediate_jobs = []
+    skill_lower = [s.lower() for s in skills]
+    if any(s in skill_lower for s in ['react', 'vue', 'angular', 'javascript', 'typescript']): immediate_jobs += ["Frontend Developer", "UI Engineer"]
+    if any(s in skill_lower for s in ['python', 'django', 'flask', 'fastapi']): immediate_jobs.append("Python Backend Developer")
+    if any(s in skill_lower for s in ['java', 'spring']): immediate_jobs.append("Java Backend Developer")
+    if any(s in skill_lower for s in ['aws', 'gcp', 'azure', 'docker', 'kubernetes']): immediate_jobs.append("DevOps / Cloud Engineer")
+    if not immediate_jobs: immediate_jobs = ["Software Developer", "Junior Developer", "Technical Associate"]
+
+    return {
+        "resume_score": min(score, 90),
+        "summary_feedback": (
+            f"Rule-based analysis (AI engine is temporarily at quota). "
+            f"Your resume has {skill_count} detected skills and {len(exp)} experience entries. "
+            "For full AI-powered analysis with deep insights, please try again in a few hours."
+        ),
+        "strengths": strengths if strengths else ["Resume was successfully parsed."],
+        "critical_mistakes": critical_mistakes,
+        "garbage_to_remove": garbage_to_remove,
+        "immediate_job_matches": immediate_jobs[:6],
+        "ai_replacement_risk": (
+            f"Based on your target role ({target_job or 'Software Development'}), AI will automate repetitive tasks "
+            "but won't replace engineers who master system design and business context. "
+            "Future-proof yourself by learning AI-adjacent skills like prompt engineering and MLOps."
+        ),
+    }
+
+
 # ----------- Resume Parsing & Analysis -----------
 
 @app.post("/parse-resume")
 async def parse_resume(
     file: UploadFile = File(...),
-    job_description: Optional[str] = Form(None)
+    job_description: Optional[str] = Form(None),
+    experience_level: Optional[str] = Form(None),
+    target_job: Optional[str] = Form(None)
 ):
     """Parses an uploaded PDF or DOCX file and returns extracted information, ATS score, and suggestions."""
     # Validate file type
@@ -117,7 +179,23 @@ async def parse_resume(
         # AI Full Resume Analysis
         from utils.gemini_client import GeminiClient
         client = GeminiClient()
-        analysis = client.analyze_full_resume(clean, job_description)
+        
+        try:
+            analysis = client.analyze_full_resume(clean, job_description, experience_level, target_job)
+        except Exception as ai_err:
+            err_str = str(ai_err)
+            # If all AI models are quota-exhausted, generate a local rule-based analysis
+            if 'QUOTA_EXHAUSTED' in err_str or 'quota' in err_str.lower():
+                print("⚠️ AI quota exhausted — falling back to local analysis engine.")
+                skills = parsed.get('skills', [])
+                analysis = _generate_local_analysis(parsed, skills, experience_level, target_job)
+                analysis['_quota_warning'] = (
+                    "⚠️ The AI analysis engine has hit its daily free-tier limit. "
+                    "This is a rule-based analysis. Full AI analysis resumes tomorrow, "
+                    "or you can add billing to https://aistudio.google.com for instant access."
+                )
+            else:
+                raise  # Re-raise non-quota errors
         
         return {
             "filename": filename,
