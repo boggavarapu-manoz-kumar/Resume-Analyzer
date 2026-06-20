@@ -30,7 +30,7 @@ public class ResumeService {
     @Value("${ai.service.url:http://localhost:8000}")
     private String aiServiceUrl;
 
-    public Map<String, Object> uploadAndAnalyze(MultipartFile file, String userEmail, String jobDescription) throws Exception {
+    public Map<String, Object> uploadAndAnalyze(MultipartFile file, String userEmail, String jobDescription, String experienceLevel, String targetJob) throws Exception {
         // Get user
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -52,6 +52,12 @@ public class ResumeService {
         if (jobDescription != null && !jobDescription.isBlank()) {
             body.add("job_description", jobDescription);
         }
+        if (experienceLevel != null && !experienceLevel.isBlank()) {
+            body.add("experience_level", experienceLevel);
+        }
+        if (targetJob != null && !targetJob.isBlank()) {
+            body.add("target_job", targetJob);
+        }
 
         HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
         ResponseEntity<Map> aiResponse = restTemplate.exchange(
@@ -67,8 +73,8 @@ public class ResumeService {
         Integer overallScore = 0;
         if (aiData.containsKey("analysis")) {
             Map<?, ?> analysis = (Map<?, ?>) aiData.get("analysis");
-            if (analysis.containsKey("overall_score")) {
-                overallScore = (Integer) analysis.get("overall_score");
+            if (analysis.containsKey("resume_score")) {
+                overallScore = (Integer) analysis.get("resume_score");
             }
         }
         
@@ -94,7 +100,7 @@ public class ResumeService {
         return resumeRepository.findByUserUserId(user.getUserId());
     }
 
-    public Map<String, Object> analyzeExistingResume(Long resumeId, String userEmail, String jobDescription) throws Exception {
+    public Map<String, Object> analyzeExistingResume(Long resumeId, String userEmail, String jobDescription, String experienceLevel, String targetJob) throws Exception {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -115,6 +121,12 @@ public class ResumeService {
         if (jobDescription != null && !jobDescription.isBlank()) {
             body.add("job_description", jobDescription);
         }
+        if (experienceLevel != null && !experienceLevel.isBlank()) {
+            body.add("experience_level", experienceLevel);
+        }
+        if (targetJob != null && !targetJob.isBlank()) {
+            body.add("target_job", targetJob);
+        }
 
         HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
         ResponseEntity<Map> aiResponse = restTemplate.exchange(
@@ -130,8 +142,8 @@ public class ResumeService {
         Integer overallScore = 0;
         if (aiData.containsKey("analysis")) {
             Map<?, ?> analysis = (Map<?, ?>) aiData.get("analysis");
-            if (analysis.containsKey("overall_score")) {
-                overallScore = (Integer) analysis.get("overall_score");
+            if (analysis.containsKey("resume_score")) {
+                overallScore = (Integer) analysis.get("resume_score");
             }
         }
 

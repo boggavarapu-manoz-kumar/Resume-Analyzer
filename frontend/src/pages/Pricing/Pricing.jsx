@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import api from '../../services/api';
-import { Heart, CheckCircle, AlertCircle, Zap } from 'lucide-react';
+import { Heart, CheckCircle, AlertCircle, Zap, ShieldCheck } from 'lucide-react';
 
 // Load Razorpay script only once
 const loadRazorpayScript = () => {
@@ -100,7 +100,7 @@ const Pricing = () => {
         },
 
         theme: {
-          color: '#60A5FA',
+          color: '#ef4444', // Red theme for heart
         },
       };
 
@@ -121,44 +121,35 @@ const Pricing = () => {
   };
 
   return (
-    <div
-      className="flex-col gap-lg animate-fade-up"
-      style={{ maxWidth: '680px', margin: '0 auto', padding: '2rem 1rem 4rem' }}
-    >
+    <div className="flex flex-col gap-8 max-w-2xl mx-auto pt-12 pb-24 relative z-10 px-4">
+      
       {/* Header */}
-      <div className="text-center" style={{ marginBottom: '0.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.25rem' }}>
-          <div
-            className="bento-icon-wrapper"
-            style={{ margin: 0, color: '#ef4444', width: '72px', height: '72px', background: 'rgba(239,68,68,0.12)' }}
-          >
-            <Heart size={34} fill="#ef4444" />
+      <div className="text-center animate-fade-up stagger-1 mb-4">
+        <div className="flex justify-center mb-6">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-red-500/30 rounded-full blur-xl group-hover:blur-2xl transition-all duration-500 animate-pulse"></div>
+            <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-red-500/20 to-pink-500/20 border border-red-500/30 flex items-center justify-center backdrop-blur-sm">
+              <Heart className="w-12 h-12 text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]" fill="currentColor" />
+            </div>
           </div>
         </div>
-        <h1 className="hero-title" style={{ fontSize: '2.8rem', marginBottom: '0.5rem' }}>
-          Support ResumeAI
+        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-4">
+          Support <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-pink-500">ResumeAI</span>
         </h1>
-        <p className="hero-subtitle" style={{ fontSize: '1.05rem', margin: 0 }}>
+        <p className="text-lg text-slate-400 max-w-xl mx-auto">
           100% free forever · Your support keeps it that way
         </p>
       </div>
 
       {/* Success banner */}
       {success && (
-        <div
-          className="animate-fade-up"
-          style={{
-            display: 'flex', alignItems: 'flex-start', gap: '0.75rem',
-            background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)',
-            borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem',
-          }}
-        >
-          <CheckCircle size={20} style={{ color: '#22c55e', flexShrink: 0, marginTop: '2px' }} />
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 flex items-start gap-4 animate-fade-up backdrop-blur-md">
+          <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 mt-0.5" />
           <div>
-            <p style={{ margin: 0, color: '#22c55e', fontWeight: 600 }}>{success}</p>
+            <p className="text-emerald-400 font-bold text-lg mb-1">{success}</p>
             {paidId && (
-              <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                Payment ID: <code style={{ userSelect: 'all' }}>{paidId}</code>
+              <p className="text-emerald-400/70 text-sm">
+                Payment ID: <code className="bg-emerald-500/20 px-2 py-1 rounded text-emerald-300 select-all">{paidId}</code>
               </p>
             )}
           </div>
@@ -167,132 +158,89 @@ const Pricing = () => {
 
       {/* Error banner */}
       {error && (
-        <div
-          style={{
-            display: 'flex', alignItems: 'center', gap: '0.75rem',
-            background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
-            borderRadius: 'var(--radius-md)', padding: '0.9rem 1.25rem',
-          }}
-        >
-          <AlertCircle size={18} style={{ color: '#ef4444', flexShrink: 0 }} />
-          <p style={{ margin: 0, color: '#ef4444', fontSize: '0.9rem' }}>{error}</p>
+        <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-center gap-3 animate-fade-up backdrop-blur-md">
+          <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+          <p className="text-red-400 font-medium">{error}</p>
         </div>
       )}
 
-      {/* Card */}
-      <div className="bento-card" style={{ padding: '2.5rem' }}>
-        <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem', lineHeight: 1.7 }}>
+      {/* Main Card */}
+      <div className="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 backdrop-blur-xl animate-fade-up stagger-2 shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <p className="text-slate-300 text-lg leading-relaxed mb-8 text-center relative z-10">
           ResumeAI is completely free — no paywalls, no ads. If it helped you land a job or ace an
-          interview, consider buying us a coffee ☕ — any amount is hugely appreciated!
+          interview, consider buying us a coffee <span className="inline-block animate-bounce">☕</span>
         </p>
 
-        {/* Quick-select amounts */}
-        <p style={{ fontWeight: 600, marginBottom: '0.75rem', color: 'var(--color-text-primary)' }}>
-          Quick pick
-        </p>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-          {QUICK_AMOUNTS.map((q) => (
-            <button
-              key={q}
-              onClick={() => { setAmount(q); setError(''); setSuccess(''); }}
-              style={{
-                padding: '0.5rem 1.1rem',
-                borderRadius: 'var(--radius-sm)',
-                border: `1.5px solid ${amount === q ? 'var(--color-accent)' : 'var(--color-border)'}`,
-                background: amount === q ? 'rgba(96,165,250,0.12)' : 'transparent',
-                color: amount === q ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                fontSize: '0.95rem',
-              }}
-            >
-              ₹{q}
-            </button>
-          ))}
-        </div>
+        <div className="relative z-10">
+          {/* Quick-select amounts */}
+          <label className="block text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 text-center">Quick Pick</label>
+          <div className="grid grid-cols-4 gap-3 mb-8">
+            {QUICK_AMOUNTS.map((q) => (
+              <button
+                key={q}
+                onClick={() => { setAmount(q); setError(''); setSuccess(''); }}
+                className={`py-3 px-2 rounded-xl font-bold transition-all ${
+                  amount === q 
+                    ? 'bg-red-500/20 border-red-500/50 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
+                    : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                } border`}
+              >
+                ₹{q}
+              </button>
+            ))}
+          </div>
 
-        {/* Custom amount input */}
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--color-text-primary)' }}>
-            Or enter a custom amount
-          </label>
-          <div style={{ position: 'relative' }}>
-            <span
-              style={{
-                position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)',
-                color: 'var(--color-text-secondary)', fontSize: '1.1rem', fontWeight: 600,
-              }}
-            >
-              ₹
-            </span>
-            <input
-              type="number"
-              value={amount}
-              min="1"
-              onChange={(e) => { setAmount(Number(e.target.value)); setError(''); setSuccess(''); }}
-              placeholder="Enter amount"
-              style={{
-                width: '100%', background: 'rgba(255,255,255,0.03)',
-                border: '1.5px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                padding: '0.9rem 1rem 0.9rem 2.5rem',
-                color: 'var(--color-text-primary)', outline: 'none',
-                fontSize: '1.1rem', fontWeight: 600, boxSizing: 'border-box',
-              }}
-              onFocus={(e) => (e.target.style.borderColor = 'var(--color-accent)')}
-              onBlur={(e) => (e.target.style.borderColor = 'var(--color-border)')}
-            />
+          {/* Custom amount input */}
+          <div className="mb-8">
+            <label className="block text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 text-center">Or enter a custom amount</label>
+            <div className="relative max-w-xs mx-auto">
+              <span className="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-bold text-slate-400">₹</span>
+              <input
+                type="number"
+                value={amount}
+                min="1"
+                onChange={(e) => { setAmount(Number(e.target.value)); setError(''); setSuccess(''); }}
+                placeholder="Enter amount"
+                className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white text-center text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all placeholder-slate-600"
+              />
+            </div>
+          </div>
+
+          {/* Pay button */}
+          <button
+            className="group relative w-full flex items-center justify-center gap-3 bg-gradient-to-r from-red-500 to-pink-500 text-white font-bold text-lg py-5 rounded-2xl transition-all hover:shadow-[0_0_30px_rgba(239,68,68,0.4)] disabled:opacity-70 hover:scale-[1.02]"
+            onClick={handlePayment}
+            disabled={loading || !amount || amount < 1}
+          >
+            {loading ? (
+              <><Zap className="w-6 h-6 animate-spin" /> Processing...</>
+            ) : (
+              <><Heart className="w-6 h-6 group-hover:scale-110 transition-transform" /> Support with ₹{amount || 0}</>
+            )}
+          </button>
+
+          {/* Secure note */}
+          <div className="flex items-center justify-center gap-2 mt-6 text-slate-500 text-sm font-medium">
+            <ShieldCheck className="w-4 h-4 text-emerald-500/70" />
+            Secured by Razorpay · SSL encrypted
           </div>
         </div>
-
-        {/* Pay button */}
-        <button
-          className="btn btn-primary"
-          onClick={handlePayment}
-          disabled={loading || !amount || amount < 1}
-          style={{ width: '100%', padding: '1rem', fontSize: '1.05rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-        >
-          {loading ? (
-            <>
-              <span
-                style={{
-                  width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.3)',
-                  borderTop: '2px solid white', borderRadius: '50%',
-                  display: 'inline-block', animation: 'spin 0.8s linear infinite',
-                }}
-              />
-              Processing…
-            </>
-          ) : (
-            <>
-              <Zap size={18} />
-              Pay ₹{amount || 0} with Razorpay
-            </>
-          )}
-        </button>
-
-        {/* Secure note */}
-        <p style={{ textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '1rem', marginBottom: 0 }}>
-          🔒 Secured by Razorpay · SSL encrypted · No card data stored
-        </p>
       </div>
 
       {/* Test credentials hint */}
-      <div
-        style={{
-          background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.2)',
-          borderRadius: 'var(--radius-md)', padding: '1rem 1.25rem',
-        }}
-      >
-        <p style={{ margin: 0, fontWeight: 600, color: 'var(--color-accent)', marginBottom: '0.4rem', fontSize: '0.9rem' }}>
-          🧪 Test Mode Active
+      <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-6 text-center animate-fade-up stagger-3 backdrop-blur-md">
+        <p className="text-blue-400 font-bold mb-2 flex items-center justify-center gap-2">
+          <Zap className="w-4 h-4" /> Test Mode Active
         </p>
-        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
-          Use card <code>4111 1111 1111 1111</code>, CVV <code>123</code>, Expiry <code>12/26</code><br />
-          Or UPI ID: <code>success@razorpay</code> · No real money charged.
+        <p className="text-slate-400 text-sm leading-relaxed">
+          Use card <code className="bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded">4111 1111 1111 1111</code>, CVV <code className="bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded">123</code>, Expiry <code className="bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded">12/26</code><br />
+          Or UPI ID: <code className="bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded">success@razorpay</code><br />
+          <span className="text-slate-500 mt-2 block">No real money charged.</span>
         </p>
       </div>
+
     </div>
   );
 };

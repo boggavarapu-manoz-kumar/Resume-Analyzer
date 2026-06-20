@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ROUTES } from '../../utils/constants';
 import LoadingSpinner from '../../components/LoadingSpinner/LoadingSpinner';
-import { Lightbulb, CheckCircle, AlertTriangle, Target, Briefcase } from 'lucide-react';
+import { Lightbulb, CheckCircle, AlertTriangle, Target, Briefcase, Award, TrendingUp, TrendingDown, Eye, ArrowRight } from 'lucide-react';
 
 const ResumeAnalysis = () => {
   const [data, setData] = useState(null);
@@ -10,35 +10,29 @@ const ResumeAnalysis = () => {
   const circleRef = useRef(null);
 
   useEffect(() => {
-    // Retrieve data from session storage
     const stored = sessionStorage.getItem('currentAnalysis');
     if (stored) {
       setData(JSON.parse(stored));
     } else {
-      // If no data, redirect to upload
       navigate(ROUTES.UPLOAD);
     }
   }, [navigate]);
 
   useEffect(() => {
     if (data && data.analysis && circleRef.current) {
-      const score = data.analysis.overall_score || 0;
+      const score = data.analysis.resume_score || 0;
       const radius = 60;
       const circumference = 2 * Math.PI * radius;
       const offset = circumference - (score / 100) * circumference;
       
-      // Setup initial state
       circleRef.current.style.strokeDasharray = `${circumference} ${circumference}`;
       circleRef.current.style.strokeDashoffset = circumference;
       
-      // Animate
       setTimeout(() => {
         circleRef.current.style.strokeDashoffset = offset;
-        
-        // Color based on score
-        if (score >= 80) circleRef.current.style.stroke = 'var(--color-success)';
-        else if (score >= 60) circleRef.current.style.stroke = 'var(--color-warning)';
-        else circleRef.current.style.stroke = 'var(--color-danger)';
+        if (score >= 80) circleRef.current.style.stroke = '#10b981'; // emerald-500
+        else if (score >= 60) circleRef.current.style.stroke = '#f59e0b'; // amber-500
+        else circleRef.current.style.stroke = '#ef4444'; // red-500
       }, 100);
     }
   }, [data]);
@@ -46,11 +40,12 @@ const ResumeAnalysis = () => {
   if (!data || !data.analysis) return <LoadingSpinner text="Loading AI Analysis..." />;
 
   const { analysis } = data;
+  const quotaWarning = analysis._quota_warning || null;
 
-  const getScoreColor = (score) => {
-    if (score >= 80) return 'var(--color-success)';
-    if (score >= 60) return 'var(--color-warning)';
-    return 'var(--color-danger)';
+  const getScoreColorClass = (score) => {
+    if (score >= 80) return 'text-emerald-400';
+    if (score >= 60) return 'text-amber-400';
+    return 'text-red-400';
   };
 
   const getScoreMessage = (score) => {
@@ -60,84 +55,186 @@ const ResumeAnalysis = () => {
   };
 
   return (
-    <div className="flex-col gap-lg max-w-3xl mx-auto" style={{ paddingBottom: 'var(--spacing-3xl)' }}>
-      <div className="text-center animate-fade-up stagger-1" style={{ marginTop: '2rem' }}>
-        <h1 className="hero-title" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Your Resume Analysis</h1>
-        <p className="hero-subtitle" style={{ fontSize: '1.1rem', marginTop: '0' }}>Here is what our AI found in your resume.</p>
-      </div>
-
-      {/* Score Message */}
-      <div className="bento-card animate-fade-up stagger-2" style={{ padding: '2rem', textAlign: 'center' }}>
-        <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Overall Score: {analysis.overall_score}/100</h3>
-        <p style={{ fontSize: '1.1rem' }}>
-          <strong style={{ color: getScoreColor(analysis.overall_score) }}>
-            {getScoreMessage(analysis.overall_score)}
-          </strong>
+    <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-24 relative z-10">
+      
+      {/* Header */}
+      <div className="text-center animate-fade-up stagger-1 mt-12 mb-4">
+        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-4">
+          Resume <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-500">Analysis</span>
+        </h1>
+        <p className="text-lg text-slate-400 max-w-xl mx-auto">
+          Here is what our AI uncovered in your resume profile.
         </p>
       </div>
 
-      {/* Summary Message */}
-      <div className="bento-card animate-fade-up stagger-3" style={{ padding: '2rem' }}>
-        <h3 style={{ fontSize: '1.3rem', marginBottom: '0.5rem', color: 'var(--color-primary)' }}>What Recruiters Think</h3>
-        <p style={{ marginBottom: '1.5rem', fontSize: '1.05rem' }}>{analysis.summary_feedback}</p>
+      {/* Quota Warning Banner */}
+      {quotaWarning && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl px-6 py-4 flex items-start gap-3 animate-fade-up">
+          <span className="text-2xl shrink-0">⚠️</span>
+          <div>
+            <p className="text-amber-300 font-bold mb-1">AI Engine Temporarily Offline — Rule-Based Analysis</p>
+            <p className="text-amber-400/80 text-sm leading-relaxed">
+              The Gemini AI API has hit its daily free-tier limit (20 requests/day). 
+              This analysis was generated by our local rule-based engine. 
+              <strong className="text-amber-300"> Full AI analysis will resume automatically when quota resets.</strong> 
+              To remove limits, add billing at <a href="https://aistudio.google.com" target="_blank" rel="noreferrer" className="underline">aistudio.google.com</a>.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Score Card */}
+      <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden animate-fade-up stagger-2 flex flex-col md:flex-row items-center gap-10">
+        <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
         
-        <h3 style={{ fontSize: '1.3rem', marginBottom: '0.5rem', color: 'var(--color-primary)' }}>How Your Resume Looks</h3>
-        <p style={{ fontSize: '1.05rem' }}>{analysis.structural_feedback}</p>
+        {/* SVG Circular Progress */}
+        <div className="relative w-40 h-40 flex items-center justify-center shrink-0">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 140 140">
+            <circle cx="70" cy="70" r="60" className="stroke-white/10" strokeWidth="12" fill="none" />
+            <circle 
+              ref={circleRef}
+              cx="70" cy="70" r="60" 
+              stroke="currentColor" 
+              strokeWidth="12" 
+              fill="none" 
+              strokeLinecap="round"
+              className="text-indigo-500 transition-all duration-1000 ease-out"
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className={`text-4xl font-black ${getScoreColorClass(analysis.resume_score)}`}>{analysis.resume_score}</span>
+            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">/ 100</span>
+          </div>
+        </div>
+
+        <div className="flex-1 text-center md:text-left">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-3">
+            <Award className="w-4 h-4" /> Resume Impact Score
+          </div>
+          <h2 className={`text-2xl font-bold mb-3 ${getScoreColorClass(analysis.resume_score)}`}>
+            {getScoreMessage(analysis.resume_score)}
+          </h2>
+          <p className="text-slate-400 leading-relaxed">
+            Your score is calculated based on formatting, keyword density, structural clarity, and the strength of your action verbs. Let's break down exactly what you did right and what needs attention.
+          </p>
+        </div>
       </div>
 
-      {/* Strengths & Weaknesses */}
-      <div className="bento-card animate-fade-up stagger-4" style={{ padding: '2rem' }}>
-        <h3 style={{ fontSize: '1.3rem', marginBottom: '1rem', color: 'var(--color-success)' }}>What You Did Well</h3>
-        {analysis.strengths && analysis.strengths.length > 0 ? (
-          <ul style={{ paddingLeft: '1.5rem', marginBottom: '2rem', fontSize: '1.05rem' }}>
-            {analysis.strengths.map((item, idx) => (
-              <li key={idx} style={{ marginBottom: '0.5rem' }}>{item}</li>
-            ))}
-          </ul>
-        ) : (
-          <p style={{ marginBottom: '2rem' }}>No major strengths found yet.</p>
-        )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Summary Feedback */}
+        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl animate-fade-up stagger-3 group hover:bg-white/10 transition-colors">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+              <Eye className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-white">Recruiter's Perspective</h3>
+          </div>
+          <p className="text-slate-300 leading-relaxed">{analysis.summary_feedback}</p>
+        </div>
 
-        <h3 style={{ fontSize: '1.3rem', marginBottom: '1rem', color: 'var(--color-warning)' }}>What Needs Work</h3>
-        {analysis.areas_for_improvement && analysis.areas_for_improvement.length > 0 ? (
-          <ul style={{ paddingLeft: '1.5rem', fontSize: '1.05rem' }}>
-            {analysis.areas_for_improvement.map((item, idx) => (
-              <li key={idx} style={{ marginBottom: '0.5rem' }}>{item}</li>
-            ))}
-          </ul>
-        ) : (
-          <p>Your resume looks perfect in this area!</p>
-        )}
+        {/* Future Proofing (AI Risk) */}
+        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl animate-fade-up stagger-4 group hover:bg-white/10 transition-colors">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-violet-500/20 text-violet-400 flex items-center justify-center">
+              <Target className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-white">AI Replacement Risk</h3>
+          </div>
+          <p className="text-slate-300 leading-relaxed">{analysis.ai_replacement_risk}</p>
+        </div>
       </div>
 
-      {/* Actionable Suggestions */}
-      {analysis.missing_keywords && analysis.missing_keywords.length > 0 && (
-        <div className="bento-card animate-fade-up stagger-5" style={{ padding: '2rem' }}>
-          <h3 style={{ fontSize: '1.3rem', marginBottom: '0.5rem', color: 'var(--color-accent)' }}>Missing Skills</h3>
-          <p style={{ marginBottom: '1rem', fontSize: '1.05rem' }}>Add these keywords to your resume to match the job description better:</p>
-          <div className="flex" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
-            {analysis.missing_keywords.map((kw, idx) => (
-              <span key={idx} className="badge">
-                {kw}
-              </span>
+      {/* The Garbage Bin & Critical Mistakes */}
+      <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl animate-fade-up stagger-5 overflow-hidden relative">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          
+          {/* Critical Mistakes */}
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white">Critical Mistakes</h3>
+            </div>
+            {analysis.critical_mistakes && analysis.critical_mistakes.length > 0 ? (
+              <ul className="space-y-4">
+                {analysis.critical_mistakes.map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    <span className="text-slate-300 leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-emerald-400 flex items-center gap-2"><CheckCircle className="w-5 h-5"/> Your resume looks flawless in this area!</p>
+            )}
+          </div>
+
+          {/* The Garbage Bin */}
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center">
+                <TrendingDown className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white">The "Garbage" Bin</h3>
+            </div>
+            <p className="text-slate-400 mb-4 text-sm">Remove these cliches, fluff words, and weak points immediately:</p>
+            {analysis.garbage_to_remove && analysis.garbage_to_remove.length > 0 ? (
+              <ul className="space-y-4">
+                {analysis.garbage_to_remove.map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-red-500/5 border border-red-500/10">
+                    <span className="text-red-400 leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-emerald-400 flex items-center gap-2"><CheckCircle className="w-5 h-5"/> No fluff found!</p>
+            )}
+          </div>
+
+        </div>
+      </div>
+
+      {/* Immediate Job Matches */}
+      {analysis.immediate_job_matches && analysis.immediate_job_matches.length > 0 && (
+        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl animate-fade-up stagger-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <Briefcase className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-white">Jobs You Can Apply For Right Now</h3>
+          </div>
+          <p className="text-slate-400 mb-6">Based on your exact skills, you are strongly qualified for these roles:</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {analysis.immediate_job_matches.map((job, idx) => (
+              <div key={idx} className="px-5 py-4 rounded-xl bg-white/5 border border-white/10 text-slate-200 font-medium hover:border-emerald-500/50 transition-colors cursor-default flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                {job}
+              </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Next Steps */}
-      <div className="bento-card animate-fade-up stagger-6" style={{ padding: '2rem', textAlign: 'center', borderColor: 'var(--color-accent)' }}>
-        <h3 style={{ fontSize: '1.3rem', marginBottom: '1rem' }}>What's Next?</h3>
-        <p style={{ fontSize: '1.05rem', marginBottom: '1.5rem' }}>Do you want to see what jobs fit you best, or learn what skills you need to improve?</p>
-        <div className="flex gap-md justify-center">
-          <Link to={ROUTES.SKILL_GAP} className="btn btn-secondary">
-            See Missing Skills
-          </Link>
-          <Link to={ROUTES.JOB_MATCHING} className="btn btn-primary">
-            Find Matching Jobs
-          </Link>
+      {/* Next Steps CTA */}
+      <div className="bg-gradient-to-br from-indigo-500/10 to-violet-500/10 border border-indigo-500/20 rounded-3xl p-10 text-center animate-fade-up stagger-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        <div className="relative z-10">
+          <h3 className="text-2xl font-bold text-white mb-4">Ready to take the next step?</h3>
+          <p className="text-slate-400 max-w-lg mx-auto mb-8">
+            Your resume is analyzed. Now, let's see what jobs you match with, or dive deeper into your skill gaps.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Link to={ROUTES.SKILL_GAP} className="px-8 py-4 rounded-xl font-bold text-white bg-white/5 border border-white/10 hover:bg-white/10 transition-colors backdrop-blur-md">
+              View Skill Gaps
+            </Link>
+            <Link to={ROUTES.JOB_MATCHING} className="group flex items-center justify-center gap-2 bg-white text-black font-bold py-4 px-8 rounded-xl transition-all hover:bg-slate-200 shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+              Find Matching Jobs <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
       </div>
+
     </div>
   );
 };

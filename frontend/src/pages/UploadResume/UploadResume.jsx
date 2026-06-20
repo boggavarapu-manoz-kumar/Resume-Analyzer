@@ -2,10 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { ROUTES } from '../../utils/constants';
+import { FileUp, FileText, CheckCircle2, Loader2, FileCheck, ArrowRight, X } from 'lucide-react';
 
 const UploadResume = () => {
   const [file, setFile] = useState(null);
   const [jobDescription, setJobDescription] = useState('');
+  const [experienceLevel, setExperienceLevel] = useState('Fresher');
+  const [targetJob, setTargetJob] = useState('');
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -16,7 +19,6 @@ const UploadResume = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch previous resumes
     const fetchResumes = async () => {
       try {
         const response = await api.get('/api/resumes/my-resumes');
@@ -54,7 +56,7 @@ const UploadResume = () => {
 
   const handleFileSelect = (selectedFile) => {
     setError('');
-    setSelectedResumeId(null); // Clear selected if user uploads new
+    setSelectedResumeId(null); 
     
     const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
     
@@ -77,22 +79,28 @@ const UploadResume = () => {
       return;
     }
 
+    if (!targetJob.trim()) {
+      setError('Please specify your Target Job for better analysis.');
+      return;
+    }
+
     setUploading(true);
     setError('');
 
     try {
       let response;
       if (selectedResumeId) {
-        // Analyze existing
-        const payload = jobDescription.trim() ? { job_description: jobDescription } : {};
+        const payload = {};
+        if (jobDescription.trim()) payload.job_description = jobDescription;
+        if (experienceLevel.trim()) payload.experience_level = experienceLevel;
+        if (targetJob.trim()) payload.target_job = targetJob;
         response = await api.post(`/api/resumes/${selectedResumeId}/analyze`, payload);
       } else {
-        // Upload new
         const formData = new FormData();
         formData.append('file', file);
-        if (jobDescription.trim()) {
-          formData.append('job_description', jobDescription);
-        }
+        if (jobDescription.trim()) formData.append('job_description', jobDescription);
+        if (experienceLevel.trim()) formData.append('experience_level', experienceLevel);
+        if (targetJob.trim()) formData.append('target_job', targetJob);
         response = await api.post('/api/resumes/upload', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
@@ -100,67 +108,87 @@ const UploadResume = () => {
         });
       }
       
-      // Store result in sessionStorage to pass to Resume Analysis page
       sessionStorage.setItem('currentAnalysis', JSON.stringify(response.data));
       navigate(ROUTES.RESUME_ANALYSIS);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to analyze resume.');
+      const detail = err.response?.data?.detail || '';
+      let msg = 'Failed to analyze resume. Please try again.';
+      if (detail.includes('RESOURCE_EXHAUSTED') || detail.includes('quota') || detail.includes('429')) {
+        msg = '⏳ AI quota limit reached. The system is automatically trying backup models. Please retry in 30 seconds.';
+      } else if (detail.includes('All Gemini models exhausted')) {
+        msg = '⚠️ All AI models have hit their daily limit. Please wait a few minutes and try again, or upgrade your Gemini API plan.';
+      } else if (detail) {
+        msg = `Error: ${detail.substring(0, 200)}`;
+      }
+      setError(msg);
       setUploading(false);
     }
   };
 
   return (
-    <div className="flex-col gap-lg max-w-3xl mx-auto" style={{ paddingBottom: 'var(--spacing-3xl)' }}>
-      <div className="text-center animate-fade-up stagger-1" style={{ marginTop: '2rem' }}>
-        <h1 className="hero-title" style={{ fontSize: '3rem', marginBottom: '1rem' }}>Upload Resume</h1>
-        <p className="hero-subtitle" style={{ fontSize: '1.1rem', marginTop: '0' }}>Let our AI read your resume and tell you how to make it better.</p>
+    <div className="flex flex-col gap-8 max-w-4xl mx-auto pb-24 relative z-10">
+      
+      {/* Header */}
+      <div className="text-center animate-fade-up stagger-1 mt-12 mb-4">
+        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white mb-4">
+          Upload <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-500">Resume</span>
+        </h1>
+        <p className="text-lg text-slate-400 max-w-xl mx-auto">
+          Drop your resume below and let our AI engine uncover your true potential.
+        </p>
       </div>
 
-      <div className="bento-card animate-fade-up stagger-2">
+      <div className="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-10 backdrop-blur-xl shadow-2xl relative overflow-hidden animate-fade-up stagger-2">
+        {/* Glow effect inside card */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
         {error && (
-          <div className="badge badge-danger mb-md w-full" style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', display: 'block', textAlign: 'center' }}>
-            {error}
+          <div className="mb-8 px-5 py-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3 text-red-300">
+            <X className="w-5 h-5 shrink-0 mt-0.5" />
+            <span className="text-sm leading-relaxed font-medium">{error}</span>
           </div>
         )}
 
-        <div className="flex-col gap-lg mb-lg">
-          {/* New Upload Area */}
+        <div className="flex flex-col gap-8 relative z-10">
+          
+          {/* Enhanced Dropzone */}
           <div 
-            className={`dropzone ${dragging ? 'dragging' : ''}`}
+            className={`relative border-2 border-dashed rounded-3xl p-12 text-center cursor-pointer transition-all duration-300 group
+              ${dragging ? 'border-indigo-400 bg-indigo-500/10' : 
+                file ? 'border-emerald-500/50 bg-emerald-500/5' : 
+                'border-white/10 bg-black/20 hover:border-indigo-500/50 hover:bg-white/5'}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            style={{ padding: '4rem 2rem', borderColor: file ? 'var(--color-accent)' : '' }}
           >
             <input 
               type="file" 
               ref={fileInputRef} 
               onChange={handleFileChange} 
               accept=".pdf,.doc,.docx"
-              style={{ display: 'none' }} 
+              className="hidden" 
             />
             
-            <div className="flex-col items-center justify-center gap-sm">
-              <div style={{ color: file ? 'var(--color-accent)' : 'var(--color-text-muted)', marginBottom: '1rem' }}>
-                {file ? (
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                ) : (
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                )}
+            <div className="flex flex-col items-center justify-center">
+              {/* Icon Container */}
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-all duration-300
+                ${file ? 'bg-emerald-500/20 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'bg-white/5 text-indigo-400 group-hover:scale-110 shadow-[0_0_15px_rgba(99,102,241,0.15)]'}`}
+              >
+                {file ? <FileCheck className="w-10 h-10" /> : <FileUp className="w-10 h-10" />}
               </div>
               
               {file ? (
-                <div className="text-center">
-                  <h3 style={{ color: 'var(--color-text-primary)', fontSize: '1.2rem', marginBottom: '0.2rem' }}>{file.name}</h3>
-                  <p className="text-muted" style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                <div className="animate-fade-up stagger-1">
+                  <h3 className="text-xl font-bold text-white mb-2">{file.name}</h3>
+                  <p className="text-emerald-400 font-medium flex items-center justify-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" /> Ready for Analysis ({(file.size / 1024 / 1024).toFixed(2)} MB)
                   </p>
                 </div>
               ) : (
-                <div className="text-center">
-                  <h3 style={{ fontSize: '1.3rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '0.2rem' }}>Upload your resume</h3>
-                  <p style={{ fontSize: '1rem', color: 'var(--color-text-secondary)' }}>Drag & drop a PDF or Word Document</p>
+                <div>
+                  <h3 className="text-2xl font-bold text-white mb-2">Drag & Drop Resume</h3>
+                  <p className="text-slate-400">PDF or Word Documents up to 5MB</p>
                 </div>
               )}
             </div>
@@ -168,86 +196,116 @@ const UploadResume = () => {
 
           {/* Previous Resumes Selection */}
           {previousResumes.length > 0 && (
-            <div className="flex-col gap-sm mt-md">
-              <h3 style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>Or analyze a previously uploaded resume</h3>
-              <div className="flex gap-sm overflow-x-auto" style={{ paddingBottom: '0.5rem' }}>
+            <div className="flex flex-col gap-4 mt-4">
+              <div className="flex items-center gap-4">
+                <div className="h-px bg-white/10 flex-1"></div>
+                <span className="text-slate-500 text-sm font-semibold uppercase tracking-wider">Or Select Existing</span>
+                <div className="h-px bg-white/10 flex-1"></div>
+              </div>
+              
+              <div className="flex gap-4 overflow-x-auto pb-4 pt-2 hide-scrollbar">
                 {previousResumes.map(r => (
                   <div 
                     key={r.resumeId} 
                     onClick={() => { setSelectedResumeId(r.resumeId); setFile(null); }}
-                    style={{ 
-                      padding: '0.75rem 1rem', 
-                      borderRadius: 'var(--radius-md)', 
-                      cursor: 'pointer',
-                      background: selectedResumeId === r.resumeId ? 'var(--color-bg-tertiary)' : 'var(--color-bg-primary)',
-                      border: selectedResumeId === r.resumeId ? '1px solid var(--color-accent)' : '1px solid var(--color-border)',
-                      minWidth: '200px',
-                      flexShrink: 0
-                    }}
+                    className={`min-w-[240px] flex-shrink-0 p-4 rounded-2xl cursor-pointer border transition-all duration-200
+                      ${selectedResumeId === r.resumeId 
+                        ? 'bg-indigo-500/20 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]' 
+                        : 'bg-black/40 border-white/10 hover:border-white/20 hover:bg-white/5'}`}
                   >
-                    <div style={{ fontWeight: 500, fontSize: '0.9rem', color: 'var(--color-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {r.resumePath.split('/').pop()}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '0.2rem' }}>
-                      {new Date(r.createdAt).toLocaleDateString()}
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-lg ${selectedResumeId === r.resumeId ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/5 text-slate-400'}`}>
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <div className={`font-semibold text-sm truncate ${selectedResumeId === r.resumeId ? 'text-white' : 'text-slate-300'}`}>
+                          {r.resumePath.split('/').pop()}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">
+                          Uploaded {new Date(r.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
-        </div>
 
-        <div style={{ height: '1px', background: 'var(--color-border)', margin: '2rem 0' }}></div>
+          <div className="h-px bg-white/10 my-4"></div>
 
-        <div className="flex-col gap-sm mb-lg">
-          <label style={{ fontSize: '1.05rem', fontWeight: 500, color: 'var(--color-text-primary)' }}>Job Description (Optional)</label>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Paste a job description here to see how well you match it.</p>
-          <textarea 
-            placeholder="Paste the job description here..."
-            value={jobDescription}
-            onChange={(e) => setJobDescription(e.target.value)}
-            style={{ 
-              minHeight: '120px', 
-              width: '100%', 
-              background: 'rgba(255,255,255,0.03)', 
-              border: '1px solid var(--color-border)', 
-              borderRadius: 'var(--radius-md)', 
-              padding: '1rem',
-              color: 'var(--color-text-primary)',
-              fontFamily: 'inherit',
-              resize: 'vertical',
-              outline: 'none',
-              marginTop: '0.5rem'
-            }}
-            onFocus={(e) => e.target.style.borderColor = 'var(--color-accent)'}
-            onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
-          ></textarea>
-        </div>
+          {/* New Input Area */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex flex-col gap-3">
+              <label className="text-lg font-bold text-white flex items-center gap-2">
+                Experience Level
+              </label>
+              <select 
+                value={experienceLevel}
+                onChange={(e) => setExperienceLevel(e.target.value)}
+                className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+              >
+                <option value="Student">Student</option>
+                <option value="Fresher">Fresher (0-1 years)</option>
+                <option value="Experienced">Experienced Professional</option>
+              </select>
+            </div>
 
-        <div className="flex justify-between items-center" style={{ marginTop: '2rem' }}>
-          {(file || selectedResumeId) && (
-            <button className="btn btn-secondary" onClick={() => { setFile(null); setSelectedResumeId(null); }}>
-              Cancel
+            <div className="flex flex-col gap-3">
+              <label className="text-lg font-bold text-white flex items-center gap-2">
+                Target Job <span className="text-xs px-2 py-1 bg-red-500/20 rounded-md text-red-300 font-normal">Required</span>
+              </label>
+              <input 
+                type="text"
+                placeholder="e.g., Senior React Developer"
+                value={targetJob}
+                onChange={(e) => setTargetJob(e.target.value)}
+                className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <label className="text-lg font-bold text-white flex items-center gap-2">
+              Target Job Description <span className="text-xs px-2 py-1 bg-white/10 rounded-md text-slate-300 font-normal">Optional</span>
+            </label>
+            <p className="text-sm text-slate-400">Paste the job description you are aiming for to get highly tailored feedback.</p>
+            <textarea 
+              placeholder="e.g. Seeking a Senior Frontend Developer with 5+ years of React experience..."
+              value={jobDescription}
+              onChange={(e) => setJobDescription(e.target.value)}
+              className="w-full min-h-[160px] bg-black/40 border border-white/10 rounded-2xl p-5 text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all resize-y"
+            ></textarea>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
+            {(file || selectedResumeId) ? (
+              <button 
+                className="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-colors"
+                onClick={() => { setFile(null); setSelectedResumeId(null); }}
+              >
+                Clear Selection
+              </button>
+            ) : <div/>}
+            
+            <button 
+              className="w-full sm:w-auto group relative flex items-center justify-center gap-3 bg-white text-black font-bold py-4 px-8 rounded-xl transition-all hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(255,255,255,0.2)] ml-auto"
+              onClick={handleUpload}
+              disabled={(!file && !selectedResumeId) || uploading}
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" /> Deep Analyzing...
+                </>
+              ) : (
+                <>
+                  Run AI Analysis <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </button>
-          )}
-          
-          <button 
-            className="btn btn-primary" 
-            onClick={handleUpload}
-            disabled={(!file && !selectedResumeId) || uploading}
-            style={{ marginLeft: 'auto', padding: '1rem 2.5rem', fontSize: '1.1rem' }}
-          >
-            {uploading ? (
-              <>
-                <span className="animate-pulse-slow">Thinking...</span>
-              </>
-            ) : (
-              <>
-                Analyze My Resume
-              </>
-            )}
-          </button>
+          </div>
+
         </div>
       </div>
     </div>
