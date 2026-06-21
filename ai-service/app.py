@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 load_dotenv()
+import asyncio # Reload trigger 2
 import tempfile
 import json
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -19,6 +20,15 @@ from interview.answer_evaluator import AnswerEvaluator
 from interview.feedback_generator import FeedbackGenerator
 from utils.preprocessing import clean_text
 
+# Import new modular engines
+from engines.persona_engine import detect_persona
+from engines.hiring_simulation_engine import simulate_hiring
+from engines.knowledge_graph_engine import generate_knowledge_graph
+from engines.market_demand_engine import analyze_market_demand
+from engines.project_evaluation_engine import evaluate_projects
+from engines.career_trajectory_engine import generate_career_trajectory
+from engines.personal_brand_engine import analyze_personal_brand
+from engines.interview_prediction_engine import predict_interview_questions
 app = FastAPI(
     title="AI Resume Analyzer API",
     description="FastAPI service for resume parsing, ATS scoring, skill gap analysis, job matching, and mock interview.",
@@ -126,21 +136,96 @@ def _generate_local_analysis(parsed: dict, skills: list, experience_level: str =
     if not immediate_jobs: immediate_jobs = ["Software Developer", "Junior Developer", "Technical Associate"]
 
     return {
-        "resume_score": min(score, 90),
-        "summary_feedback": (
-            f"Rule-based analysis (AI engine is temporarily at quota). "
-            f"Your resume has {skill_count} detected skills and {len(exp)} experience entries. "
-            "For full AI-powered analysis with deep insights, please try again in a few hours."
-        ),
-        "strengths": strengths if strengths else ["Resume was successfully parsed."],
-        "critical_mistakes": critical_mistakes,
-        "garbage_to_remove": garbage_to_remove,
-        "immediate_job_matches": immediate_jobs[:6],
-        "ai_replacement_risk": (
-            f"Based on your target role ({target_job or 'Software Development'}), AI will automate repetitive tasks "
-            "but won't replace engineers who master system design and business context. "
-            "Future-proof yourself by learning AI-adjacent skills like prompt engineering and MLOps."
-        ),
+        "persona": {
+            "persona": "Experienced Professional" if len(exp) >= 3 else ("Fresher" if len(exp) == 1 else "Student"),
+            "primary_goal": target_job or immediate_jobs[0] if immediate_jobs else "Software Engineer",
+            "priority_analysis": ["ATS", "Projects", "Skills"]
+        },
+        "hiring_simulation": {
+            "hr_pass_probability": min(score + 10, 95),
+            "technical_pass_probability": min(score - 5, 90),
+            "manager_pass_probability": min(score, 90),
+            "offer_probability": min(score - 10, 85),
+            "rejection_risks": critical_mistakes if critical_mistakes else ["Competition from highly skilled peers."]
+        },
+        "knowledge_graph": {
+            "current_position": "Current Level",
+            "target_position": target_job or "Target Role",
+            "missing_skills_path": ["System Design", "Cloud Deployment"] if len(skills) < 10 else ["Advanced Architecture"],
+            "learning_path": [
+                "Week 1-2: Master core backend concepts",
+                "Week 3-4: Deploy a full-stack project"
+            ]
+        },
+        "market_demand": {
+            "overall_demand": "High" if len(skills) >= 5 else "Medium",
+            "skill_demand_list": [{"skill": s, "demand": "High"} for s in skills[:5]],
+            "best_target_companies": ["Startups", "Mid-size Tech", "Service Companies"],
+            "salary_confidence_score": 75
+        },
+        "project_evaluation": {
+            "projects": [
+                {
+                    "project_name": "Sample Project (Local Mock)",
+                    "technical_complexity_score": 7,
+                    "deployment_score": 5,
+                    "industry_relevance_score": 8,
+                    "problem_solving_score": 7,
+                    "resume_impact_score": 8,
+                    "improvement_suggestion": "Add quantification to impact and deploy the application."
+                }
+            ],
+            "overall_project_strength": 75
+        },
+        "career_trajectory": {
+            "current_stage": "Mid-level" if len(exp) >= 2 else "Beginner",
+            "six_months": target_job or "Developer",
+            "one_year": f"Senior {target_job}" if target_job else "Senior Developer",
+            "three_years": "Lead Engineer",
+            "milestones": [
+                {"step": "Month 1-3", "focus": "System Design basics"},
+                {"step": "Month 4-12", "focus": "Lead a complex project"}
+            ]
+        },
+        "personal_brand": {
+            "technical_brand_score": 70,
+            "online_presence_score": 50,
+            "professional_visibility_score": 60,
+            "overall_brand_score": 60,
+            "brand_suggestions": ["Add more open source links", "Publish a technical article"]
+        },
+        "interview_prediction": {
+            "technical_readiness_score": 75,
+            "communication_readiness_score": 80,
+            "project_explanation_score": 70,
+            "predicted_questions": [
+                {
+                    "category": "Technical",
+                    "question": "How did you handle state management in your frontend?",
+                    "difficulty": "Medium",
+                    "expected_answer_focus": "Context API, Redux, or precise prop drilling."
+                },
+                {
+                    "category": "System Design",
+                    "question": "How would you scale your local mock project to handle 10,000 requests per second?",
+                    "difficulty": "Hard",
+                    "expected_answer_focus": "Load balancing, caching with Redis, and horizontal scaling."
+                }
+            ]
+        },
+        "base_analysis": {
+            "resume_score": min(score, 90),
+            "summary_feedback": (
+                f"Rule-based analysis (AI engine is temporarily at quota). "
+                f"Your resume has {skill_count} detected skills and {len(exp)} experience entries. "
+                "For full AI-powered analysis with deep insights, please try again in a few hours."
+            ),
+            "strengths": strengths if strengths else ["Resume was successfully parsed."],
+            "critical_mistakes": critical_mistakes,
+            "garbage_to_remove": garbage_to_remove,
+            "immediate_job_matches": immediate_jobs[:6],
+            "ai_replacement_risk": "Learn AI adjacent skills like prompt engineering to stay relevant."
+        }
     }
 
 
@@ -176,12 +261,42 @@ async def parse_resume(
         raw_text = extract_text(tmp_path)
         clean = clean_text(raw_text)
 
-        # AI Full Resume Analysis
+        # AI Full Resume Analysis (Analysis Orchestrator)
         from utils.gemini_client import GeminiClient
+        import asyncio
         client = GeminiClient()
         
         try:
-            analysis = client.analyze_full_resume(clean, job_description, experience_level, target_job)
+            # Run engines concurrently using thread pool (since Gemini client is sync)
+            # The user explicitly said "take your own time"
+            tasks = [
+                ("persona", detect_persona, (client, clean)),
+                ("hiring_simulation", simulate_hiring, (client, clean, target_job)),
+                ("knowledge_graph", generate_knowledge_graph, (client, clean, target_job)),
+                ("market_demand", analyze_market_demand, (client, clean)),
+                ("project_evaluation", evaluate_projects, (client, clean)),
+                ("career_trajectory", generate_career_trajectory, (client, clean, target_job)),
+                ("personal_brand", analyze_personal_brand, (client, clean)),
+                ("interview_prediction", predict_interview_questions, (client, clean, target_job)),
+                ("base_analysis", client.analyze_full_resume, (clean, job_description, experience_level, target_job))
+            ]
+            
+            analysis = {}
+            quota_exhausted = False
+            for key, func, args in tasks:
+                try:
+                    result = await asyncio.to_thread(func, *args)
+                    analysis[key] = result if isinstance(result, dict) else result.model_dump()
+                    await asyncio.sleep(1) # Add a small 1-second delay to prevent hitting 15 RPM limits
+                except Exception as ai_err:
+                    print(f"Engine {key} failed: {ai_err}")
+                    analysis[key] = {"error": str(ai_err)}
+                    if "QUOTA_EXHAUSTED" in str(ai_err) or '429' in str(ai_err):
+                        quota_exhausted = True
+            
+            if quota_exhausted:
+                raise Exception("QUOTA_EXHAUSTED")
+                
         except Exception as ai_err:
             err_str = str(ai_err)
             # If all AI models are quota-exhausted, generate a local rule-based analysis

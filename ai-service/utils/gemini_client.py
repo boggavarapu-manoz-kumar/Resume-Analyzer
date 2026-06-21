@@ -70,13 +70,15 @@ class GeminiClient:
                 print(f"Failed to configure Gemini: {e}")
                 self.has_key = False
 
-    # Model fallback chain: fastest/cheapest first, fallback to older models if quota exceeded
+    # Model fallback chain: uses modern models that the API key supports
     MODEL_FALLBACK_CHAIN = [
         'gemini-2.5-flash-lite',
+        'gemini-2.5-flash',
         'gemini-2.0-flash-lite',
         'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro',
+        'gemini-flash-latest',
+        'gemini-flash-lite-latest',
+        'gemini-pro-latest'
     ]
 
     def generate_structured_content(self, prompt, schema):
@@ -113,7 +115,7 @@ class GeminiClient:
                     'not supported' in err_str
                 )
                 if is_skippable:
-                    print(f"⚠️  Model '{model}' unavailable. Trying next fallback...")
+                    print(f"⚠️  Model '{model}' unavailable (Error: {err_str}). Trying next fallback...")
                     last_error = err_str
                     time.sleep(0.3)
                     continue
