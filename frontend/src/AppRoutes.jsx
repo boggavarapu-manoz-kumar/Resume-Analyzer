@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { ROUTES } from './utils/constants';
 
@@ -21,7 +21,7 @@ import CareerRoadmap from './pages/CareerRoadmap/CareerRoadmap';
 import Pricing from './pages/Pricing/Pricing';
 
 
-// Private Route Wrapper
+// Private Route Wrapper (Requires Login)
 const PrivateRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   
@@ -30,13 +30,24 @@ const PrivateRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to={ROUTES.LOGIN} replace />;
 };
 
+// Public Route Wrapper (Redirects to Dashboard if already Logged In)
+const PublicRoute = () => {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) return <LoadingSpinner />;
+  
+  return isAuthenticated ? <Navigate to={ROUTES.DASHBOARD} replace /> : <Outlet />;
+};
+
 const AppRoutes = () => {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path={ROUTES.HOME} element={<Landing />} />
-      <Route path={ROUTES.LOGIN} element={<Login />} />
-      <Route path={ROUTES.REGISTER} element={<Register />} />
+      <Route element={<PublicRoute />}>
+        <Route path={ROUTES.HOME} element={<Landing />} />
+        <Route path={ROUTES.LOGIN} element={<Login />} />
+        <Route path={ROUTES.REGISTER} element={<Register />} />
+      </Route>
       
       {/* Protected Routes inside Layout */}
       <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
