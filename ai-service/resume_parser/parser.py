@@ -46,6 +46,7 @@ class ResumeParser:
         # Simple section extraction
         experience = self._extract_section(text, ["experience", "work history", "employment"])
         education = self._extract_section(text, ["education", "academic", "qualification", "degree"])
+        projects = self._extract_section(text, ["projects", "personal projects", "academic projects", "key projects"])
 
         return {
             "name": name,
@@ -55,7 +56,8 @@ class ResumeParser:
             "linkedin": linkedin,
             "github": github,
             "experience": experience,
-            "education": education
+            "education": education,
+            "projects": projects
         }
 
     def _extract_email(self, text):

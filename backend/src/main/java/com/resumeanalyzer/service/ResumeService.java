@@ -75,10 +75,15 @@ public class ResumeService {
             Map<?, ?> analysis = (Map<?, ?>) aiData.get("analysis");
             if (analysis.containsKey("resume_score")) {
                 overallScore = (Integer) analysis.get("resume_score");
+            } else if (analysis.containsKey("base_analysis")) {
+                Map<?, ?> baseAnalysis = (Map<?, ?>) analysis.get("base_analysis");
+                if (baseAnalysis.containsKey("resume_score")) {
+                    overallScore = (Integer) baseAnalysis.get("resume_score");
+                }
             }
         }
         
-        String category = "Software Engineer";
+        String category = (targetJob != null && !targetJob.isBlank()) ? targetJob : "Software Engineer";
 
         // Persist resume record
         Resume resume = Resume.builder()
@@ -91,6 +96,7 @@ public class ResumeService {
 
         // Return full AI response with added DB resume ID
         aiData.put("resume_id", resume.getResumeId());
+        aiData.put("target_job", targetJob);
         return aiData;
     }
 
@@ -153,6 +159,32 @@ public class ResumeService {
 
         // Return full AI response with added DB resume ID
         aiData.put("resume_id", resume.getResumeId());
+        aiData.put("target_job", targetJob);
         return aiData;
+    }
+
+    public Map<String, Object> analyzeDeep(Long resumeId, String targetJob) throws Exception {
+        Resume resume = resumeRepository.findById(resumeId)
+                .orElseThrow(() -> new RuntimeException("Resume not found"));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", new org.springframework.core.io.FileSystemResource(resume.getResumePath()));
+        
+        if (targetJob != null && !targetJob.isBlank()) {
+            body.add("target_job", targetJob);
+        }
+
+        HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
+        ResponseEntity<Map> aiResponse = restTemplate.exchange(
+                aiServiceUrl + "/analyze-deep",
+                HttpMethod.POST,
+                request,
+                Map.class
+        );
+
+        return aiResponse.getBody() != null ? aiResponse.getBody() : new HashMap<>();
     }
 }
