@@ -4,8 +4,9 @@ import { ROUTES } from '../../utils/constants';
 import LoadingSpinner from '../../components/LoadingSpinner/LoadingSpinner';
 import { 
   BarChart, Users, Target, Briefcase, Award, AlertTriangle, 
-  CheckCircle, TrendingUp, TrendingDown, Eye, ArrowRight, UserCheck, Activity, LineChart
+  CheckCircle, TrendingUp, TrendingDown, Eye, ArrowRight, UserCheck, Activity, LineChart, Loader2
 } from 'lucide-react';
+import api from '../../services/api';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: BarChart },
@@ -34,17 +35,49 @@ const ProgressBar = ({ label, value, colorClass }) => (
 const ResumeAnalysis = () => {
   const [data, setData] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [deepAnalysisLoading, setDeepAnalysisLoading] = useState(false);
   const navigate = useNavigate();
   const circleRef = useRef(null);
 
   useEffect(() => {
     const stored = sessionStorage.getItem('currentAnalysis');
     if (stored) {
-      setData(JSON.parse(stored));
+      const parsedData = JSON.parse(stored);
+      setData(parsedData);
+      
+      // If we only have base_analysis and no deep analysis yet, fetch it
+      if (parsedData.resume_id && (!parsedData.analysis || !parsedData.analysis.persona)) {
+        fetchDeepAnalysis(parsedData.resume_id, parsedData.target_job);
+      }
     } else {
       navigate(ROUTES.UPLOAD);
     }
   }, [navigate]);
+
+  const fetchDeepAnalysis = async (resumeId, targetJob) => {
+    setDeepAnalysisLoading(true);
+    try {
+      const response = await api.post(`/api/resumes/${resumeId}/analyze-deep`, {
+        target_job: targetJob
+      });
+      
+      setData(prev => {
+        const newData = {
+          ...prev,
+          analysis: {
+            ...prev.analysis,
+            ...response.data.analysis
+          }
+        };
+        sessionStorage.setItem('currentAnalysis', JSON.stringify(newData));
+        return newData;
+      });
+    } catch (err) {
+      console.error("Failed to fetch deep analysis", err);
+    } finally {
+      setDeepAnalysisLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (data && data.analysis && circleRef.current && activeTab === 'overview') {
@@ -117,7 +150,7 @@ const ResumeAnalysis = () => {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-3">
             <UserCheck className="w-4 h-4" /> Detected Persona: {persona.persona || 'Candidate'}
           </div>
-          <h2 className="text-2xl font-bold mb-3 text-white">Target: {persona.primary_goal || 'Software Engineer'}</h2>
+          <h2 className="text-2xl font-bold mb-3 text-white">Target: {data.target_job || persona.primary_goal || 'Software Engineer'}</h2>
           <p className="text-slate-400 leading-relaxed mb-4">
             {base.summary_feedback || 'Your profile has been fully analyzed by our engine orchestrator.'}
           </p>
@@ -130,14 +163,115 @@ const ResumeAnalysis = () => {
         </div>
       </div>
 
+      {/* End-to-End Deep Analysis Detailed Report */}
+      {base.end_to_end_summary && (
+        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-4">
+            <Activity className="text-violet-400" /> End-to-End Profile Analysis (A to Z Deep Dive)
+          </h3>
+          <p className="text-slate-300 leading-relaxed whitespace-pre-line text-justify">
+            {base.end_to_end_summary}
+          </p>
+        </div>
+      )}
+
+      {/* Recruiter Verdict & Risk Panel */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Rejection Risks / Why Rejected */}
+        <div className="bg-red-500/5 border border-red-500/20 rounded-3xl p-8 backdrop-blur-xl">
+          <h3 className="text-xl font-bold text-red-400 flex items-center gap-2 mb-4">
+            <AlertTriangle className="text-red-400" /> Why This Resume Might Get Rejected
+          </h3>
+          <ul className="space-y-3">
+            {(base.why_it_would_be_rejected || []).map((reason, i) => (
+              <li key={i} className="text-red-300/90 flex items-start gap-2 text-sm leading-relaxed">
+                <span className="text-red-500 mt-1 font-bold">•</span> {reason}
+              </li>
+            ))}
+            {(!base.why_it_would_be_rejected || base.why_it_would_be_rejected.length === 0) && (
+              <li className="text-slate-400 italic">No high-risk rejection points found.</li>
+            )}
+          </ul>
+        </div>
+
+        {/* Action Plan / How to Get More Interviews */}
+        <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-8 backdrop-blur-xl">
+          <h3 className="text-xl font-bold text-emerald-400 flex items-center gap-2 mb-4">
+            <CheckCircle className="text-emerald-400" /> Action Plan to Guarantee More Interviews
+          </h3>
+          <ul className="space-y-3">
+            {(base.how_to_get_more_interviews || []).map((step, i) => (
+              <li key={i} className="text-emerald-300/90 flex items-start gap-2 text-sm leading-relaxed">
+                <span className="text-emerald-500 mt-1 font-bold">✓</span> {step}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Deep-Dive Parameter Critique Card */}
+      <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl shadow-xl">
+        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <LineChart className="text-indigo-400" /> Granular Parameter Evaluation & Critiques
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Formatting */}
+          <div className="bg-black/30 border border-white/5 rounded-2xl p-6">
+            <h4 className="text-md font-bold text-slate-200 mb-2 flex items-center justify-between">
+              <span>ATS Formatting & Structure</span>
+              <span className="text-xs px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-mono">Verified</span>
+            </h4>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              {base.detailed_formatting_analysis}
+            </p>
+          </div>
+
+          {/* Keywords */}
+          <div className="bg-black/30 border border-white/5 rounded-2xl p-6">
+            <h4 className="text-md font-bold text-slate-200 mb-2 flex items-center justify-between">
+              <span>Keyword & Semantic Alignment</span>
+              <span className="text-xs px-2 py-0.5 rounded bg-violet-500/20 text-violet-300 font-mono">Detailed</span>
+            </h4>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              {base.detailed_keyword_analysis}
+            </p>
+          </div>
+
+          {/* Experience */}
+          <div className="bg-black/30 border border-white/5 rounded-2xl p-6">
+            <h4 className="text-md font-bold text-slate-200 mb-2 flex items-center justify-between">
+              <span>Experience & Metric Quantification</span>
+              <span className="text-xs px-2 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300 font-mono">Impact Check</span>
+            </h4>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              {base.detailed_experience_analysis}
+            </p>
+          </div>
+
+          {/* Skills */}
+          <div className="bg-black/30 border border-white/5 rounded-2xl p-6">
+            <h4 className="text-md font-bold text-slate-200 mb-2 flex items-center justify-between">
+              <span>Skill Gap & Industry Benchmarking</span>
+              <span className="text-xs px-2 py-0.5 rounded bg-pink-500/20 text-pink-300 font-mono">Competency</span>
+            </h4>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              {base.detailed_skills_analysis}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Strengths & Mistakes Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
           <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-4">
-            <CheckCircle className="text-emerald-400" /> Strengths
+            <CheckCircle className="text-emerald-400" /> Quick Strengths
           </h3>
           <ul className="space-y-3">
             {(base.strengths || []).map((s, i) => (
-              <li key={i} className="text-slate-300 flex items-start gap-2">
+              <li key={i} className="text-slate-300 flex items-start gap-2 text-sm">
                 <span className="text-emerald-500 mt-1">•</span> {s}
               </li>
             ))}
@@ -145,11 +279,11 @@ const ResumeAnalysis = () => {
         </div>
         <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl">
           <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-4">
-            <AlertTriangle className="text-amber-400" /> Critical Mistakes
+            <AlertTriangle className="text-amber-400" /> Immediate Things to Remove
           </h3>
           <ul className="space-y-3">
-            {(base.critical_mistakes || []).map((s, i) => (
-              <li key={i} className="text-slate-300 flex items-start gap-2">
+            {(base.garbage_to_remove || []).map((s, i) => (
+              <li key={i} className="text-slate-300 flex items-start gap-2 text-sm">
                 <span className="text-amber-500 mt-1">•</span> {s}
               </li>
             ))}
@@ -465,11 +599,21 @@ const ResumeAnalysis = () => {
       {/* Tab Content */}
       <div className="min-h-[400px]">
         {activeTab === 'overview' && renderOverview()}
-        {activeTab === 'hiring' && renderHiringSimulation()}
-        {activeTab === 'projects' && renderProjects()}
-        {activeTab === 'market' && renderMarket()}
-        {activeTab === 'brand' && renderBrandAndTrajectory()}
-        {activeTab === 'interview' && renderInterviewPrep()}
+        {activeTab !== 'overview' && deepAnalysisLoading && (
+          <div className="flex flex-col items-center justify-center h-64 space-y-4 animate-fade-up">
+            <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
+            <p className="text-slate-400 font-bold">Deep AI Engines are processing this section in the background...</p>
+          </div>
+        )}
+        {activeTab !== 'overview' && !deepAnalysisLoading && (
+          <>
+            {activeTab === 'hiring' && renderHiringSimulation()}
+            {activeTab === 'projects' && renderProjects()}
+            {activeTab === 'market' && renderMarket()}
+            {activeTab === 'brand' && renderBrandAndTrajectory()}
+            {activeTab === 'interview' && renderInterviewPrep()}
+          </>
+        )}
       </div>
 
       {/* Next Steps CTA */}

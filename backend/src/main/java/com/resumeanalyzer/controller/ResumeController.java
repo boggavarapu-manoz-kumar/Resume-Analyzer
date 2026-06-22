@@ -42,6 +42,16 @@ public class ResumeController {
         return ResponseEntity.ok(result);
     }
 
+    @PostMapping("/{id}/analyze-deep")
+    public ResponseEntity<Map<String, Object>> analyzeDeep(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> payload) throws Exception {
+        
+        String targetJob = payload != null ? payload.get("target_job") : null;
+        Map<String, Object> result = resumeService.analyzeDeep(id, targetJob);
+        return ResponseEntity.ok(result);
+    }
+
     @GetMapping("/my-resumes")
     public ResponseEntity<?> getMyResumes(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(resumeService.getUserResumes(userDetails.getUsername()));

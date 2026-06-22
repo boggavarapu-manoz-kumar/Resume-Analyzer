@@ -49,11 +49,18 @@ class CareerGuidanceResponse(BaseModel):
 class ResumeAnalysisResponse(BaseModel):
     resume_score: int
     summary_feedback: str
+    end_to_end_summary: str
     garbage_to_remove: List[str]
     critical_mistakes: List[str]
     immediate_job_matches: List[str]
     ai_replacement_risk: str
     strengths: List[str]
+    detailed_formatting_analysis: str
+    detailed_keyword_analysis: str
+    detailed_experience_analysis: str
+    detailed_skills_analysis: str
+    why_it_would_be_rejected: List[str]
+    how_to_get_more_interviews: List[str]
 
 import time
 
@@ -81,9 +88,15 @@ class GeminiClient:
         'gemini-pro-latest'
     ]
 
+    # Class-level circuit breaker to prevent repeated slow API calls if quota/key is broken
+    _circuit_broken = False
+
     def generate_structured_content(self, prompt, schema):
         """Generates structured JSON via Gemini. Automatically falls back through
         multiple models if quota is exhausted or model is unavailable."""
+        if GeminiClient._circuit_broken:
+            raise Exception("CIRCUIT_BREAKER_ACTIVE: Gemini API is known to be offline or at quota.")
+
         if not self.has_key or not self.client:
             raise Exception("GEMINI_API_KEY is not configured. Please set GEMINI_API_KEY env var.")
 
@@ -121,9 +134,11 @@ class GeminiClient:
                     continue
                 else:
                     print(f"❌ Fatal error on model '{model}': {err_str}")
+                    GeminiClient._circuit_broken = True
                     raise Exception(f"Gemini generation error on {model}: {err_str}")
 
         # All models exhausted — raise a clear, user-friendly error
+        GeminiClient._circuit_broken = True
         raise Exception(
             "QUOTA_EXHAUSTED: All Gemini models have reached their daily free-tier quota. "
             "The quota resets daily. Please try again later, or add a billing account to your "
@@ -133,8 +148,8 @@ class GeminiClient:
     def generate_matched_jobs(self, resume_text):
         """Dynamically synthesizes completely tailored job opportunities based on the resume."""
         prompt = (
-            f"You are a Principal Engineering Recruiter at a FAANG company (Meta, Google, Amazon). "
-            f"Critically analyze the candidate's resume text below and generate 4 highly realistic, top-tier job openings tailored precisely to their skill profile. "
+            f"You are a top-tier HR Executive and Principal Engineering Recruiter at a FAANG company. "
+            f"Provide the most accurate, perfect, and clear analysis to generate 4 highly realistic, top-tier job openings tailored precisely to their skill profile. "
             f"Requirements:\n"
             f"1. Companies must be realistic tech giants or high-growth unicorns.\n"
             f"2. Descriptions must sound exactly like real JDs, mentioning specific tech stacks.\n"
@@ -147,7 +162,7 @@ class GeminiClient:
         """Generates interview questions dynamically using Gemini."""
         skills_str = ", ".join(skills) if skills else "General Software Engineering"
         prompt = (
-            f"You are a Staff Software Engineer at Meta conducting a technical interview. "
+            f"You are an elite pro-level Interviewer and Technical HR Director conducting a rigorous interview. "
             f"The candidate has {experience} of experience and claims proficiency in: {skills_str}. "
             f"Generate 5 highly challenging, specific technical questions that test deep understanding, edge cases, system design, and practical trade-offs. "
             f"Avoid generic questions. Instead of 'What is React?', ask 'How would you optimize a large-scale React app suffering from unnecessary re-renders?'\n"
@@ -158,7 +173,7 @@ class GeminiClient:
         """Evaluates mock interview transcript dynamically using Gemini."""
         transcript_str = "\n".join([f"Q: {item['question']}\nA: {item['answer']}" for item in transcript_items])
         prompt = (
-            f"You are a stringent Bar Raiser interviewer at Amazon. Evaluate the following interview transcript. "
+            f"You are a stringent Bar Raiser and top-level HR Professional. Evaluate the following interview transcript with perfect, clear, and highly accurate analysis. "
             f"Grade the candidate strictly across three vectors (0-100 scale):\n"
             f"1. Technical Knowledge: Did they understand the underlying concepts? Did they mention trade-offs or edge cases?\n"
             f"2. Communication Clarity: Was the answer concise and well-structured (e.g., STAR method)?\n"
@@ -173,7 +188,7 @@ class GeminiClient:
         """Generates a detailed, personalized career roadmap using Gemini."""
         skills_str = ", ".join(skills) if skills else "general development skills"
         prompt = (
-            f"Act as a Principal Staff Engineer acting as a career mentor. "
+            f"Act as an elite Career Coach and Senior HR Director acting as a career mentor. Provide the most accurate and perfect guidance possible. "
             f"The mentee is currently a '{current_role}' and wants to become a '{target_role}'. "
             f"Their current verified skills: {skills_str}.\n\n"
             f"Generate a highly specific, chronological learning roadmap. "
@@ -185,8 +200,9 @@ class GeminiClient:
     def analyze_full_resume(self, resume_text, job_description=None, experience_level=None, target_job=None):
         """Generates a comprehensive AI-driven qualitative and structural resume analysis."""
         prompt = (
-            f"You are a 100-year-experience Elite Tech Recruiter. You are brutally honest. "
-            f"Analyze the following candidate's resume text.\n"
+            f"You are an elite, top-tier HR Professional and Chief Talent Acquisition Officer in the HR domain. "
+            f"You provide the most accurate, perfect, clear, and best-in-class analysis possible at a pro level. "
+            f"Analyze the following candidate's resume text with absolute precision, providing extremely clear and accurate feedback.\n"
         )
         if experience_level:
             prompt += f"The candidate considers themselves a: {experience_level}.\n"
@@ -196,15 +212,36 @@ class GeminiClient:
                 prompt += f"-> Since they are Experienced, be extremely strict on measurable impact, leadership, and system design complexity. No fluff allowed.\n"
                 
         if target_job:
-            prompt += f"Their Target Future Job is: {target_job}.\n"
+            prompt += (
+                f"Their Target Future Job is: '{target_job}'.\n"
+                f"-> Apply 30+ years of HR Domain Expertise specifically tailored to '{target_job}':\n"
+                f"   1. Industry-Specific Standards: Dynamically evaluate the resume against the exact skill set, tools, and methodologies standard for a professional '{target_job}' (whether in Tech, Finance, Marketing, Sales, Healthcare, Product, etc.).\n"
+                f"   2. Role-Appropriate Impact: Look for domain-relevant performance metrics (e.g., revenue growth for sales, campaign ROI for marketing, system scale/latency for engineering, efficiency/clinical outcomes for healthcare). Flag a lack of quantifiable metrics appropriate to this role as a critical mistake.\n"
+                f"   3. Career Progression: Assess if the experience matches the seniority and trajectory expected for a '{target_job}'.\n"
+                f"   4. Contextual Skills: Verify that the skills claimed are logically applied and demonstrated in the projects or professional experiences related to this career path.\n"
+            )
+        else:
+            prompt += (
+                f"-> If no target job is specified, dynamically infer the candidate's target career trajectory based on their experience and skills, and evaluate them with 30+ years of HR domain expertise tailored to that inferred industry.\n"
+            )
 
         prompt += (
-            f"Evaluation Criteria:\n"
-            f"- Provide a 'resume_score' (0-100) reflecting overall market impact.\n"
-            f"- Identify 'garbage_to_remove': cliches, buzzwords, irrelevant hobbies, bad formatting practices, or weak bullet points.\n"
-            f"- Identify 'critical_mistakes': structural errors, missing core skills, or things they MUST fix.\n"
-            f"- Suggest 'immediate_job_matches': specific job titles they are 100% qualified to apply for right now.\n"
-            f"- Assess 'ai_replacement_risk': Write a short, brutally honest paragraph predicting if AI will replace their target job ({target_job or 'their current path'}), and how they can future-proof themselves.\n\n"
+            f"Evaluation Criteria (MUST BE EXHAUSTIVE, A to Z, POINT-TO-POINT):\n"
+            f"- 'resume_score' (0-100) reflecting overall market impact.\n"
+            f"- 'summary_feedback': A high-level overview.\n"
+            f"- 'end_to_end_summary': A massive, multi-paragraph deep dive into every single aspect of their profile. Leave no stone unturned.\n"
+            f"- 'garbage_to_remove': specific cliches, buzzwords, irrelevant hobbies, bad formatting practices, or weak bullet points.\n"
+            f"- 'critical_mistakes': structural errors, missing core skills, or things they MUST fix.\n"
+            f"- 'immediate_job_matches': specific job titles they are 100% qualified to apply for right now.\n"
+            f"- 'ai_replacement_risk': Write a short, brutally honest paragraph predicting if AI will replace their target job ({target_job or 'their current path'}), and how they can future-proof themselves.\n"
+            f"- 'strengths': core strengths identified.\n"
+            f"- 'detailed_formatting_analysis': A comprehensive, paragraph-length critique of the resume's format, ATS readability, and visual hierarchy.\n"
+            f"- 'detailed_keyword_analysis': A comprehensive, paragraph-length breakdown of missing keywords, overused terms, and exactly what ATS systems will flag.\n"
+            f"- 'detailed_experience_analysis': A comprehensive, paragraph-length review of their bullet points, highlighting missing quantifiable metrics and how to rewrite them for maximum impact.\n"
+            f"- 'detailed_skills_analysis': A comprehensive, paragraph-length skill gap analysis comparing their current skills against top-tier industry expectations.\n"
+            f"- 'why_it_would_be_rejected': A list of the brutal, honest reasons why a recruiter or ATS would immediately reject this resume.\n"
+            f"- 'how_to_get_more_interviews': A list of highly specific, actionable, step-by-step instructions on what to change right now to triple their interview rate.\n\n"
+            f"You MUST provide the maximum possible detail. Give them MORE DATA, more analysis, and perfect accuracy. Do not be minimal.\n\n"
             f"Resume Text:\n{resume_text}\n\n"
         )
             
