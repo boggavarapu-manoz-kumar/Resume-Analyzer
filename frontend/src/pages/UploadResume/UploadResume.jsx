@@ -82,6 +82,12 @@ const UploadResume = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // If we already have a cached analysis, skip upload and go straight to analysis
+    if (sessionStorage.getItem('currentAnalysis')) {
+      navigate(ROUTES.RESUME_ANALYSIS);
+      return;
+    }
+
     const fetchResumes = async () => {
       try {
         const response = await api.get('/api/resumes/my-resumes');
@@ -91,7 +97,7 @@ const UploadResume = () => {
       }
     };
     fetchResumes();
-  }, []);
+  }, [navigate]);
 
   const handleDragOver = (e) => { e.preventDefault(); setDragging(true); };
   const handleDragLeave = () => setDragging(false);
