@@ -1,7 +1,10 @@
 import os
+import logging
 from dotenv import load_dotenv
 load_dotenv()
-import asyncio # Reload trigger 2
+import asyncio
+
+logger = logging.getLogger(__name__)
 import tempfile
 import json
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
@@ -455,6 +458,7 @@ async def parse_resume(
 
     # Save to temp file
     suffix = ext
+    tmp_path = None
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         content = await file.read()
         tmp.write(content)
@@ -469,7 +473,7 @@ async def parse_resume(
         raw_text = extract_text(tmp_path)
         clean = clean_text(raw_text)
 
-        # AI Full Resume Analysis (Analysis Orchestrator)
+        # AI Full Resume Analysis
         from utils.gemini_client import GeminiClient
         import asyncio
         
@@ -477,38 +481,41 @@ async def parse_resume(
         GeminiClient._circuit_broken = False
         client = GeminiClient()
         
+        analysis = {}
+        ai_succeeded = False
         try:
-            # Run only base_analysis for optimal first load
-            analysis = {}
-            
-            try:
-                base_result = await asyncio.to_thread(client.analyze_full_resume, clean, job_description, experience_level, target_job)
-                analysis['base_analysis'] = base_result if isinstance(base_result, dict) else base_result.model_dump()
-            except Exception as ai_err:
-                print(f"Base analysis failed: {ai_err}")
-                analysis['base_analysis'] = {"error": str(ai_err)}
-                if "QUOTA_EXHAUSTED" in str(ai_err) or '429' in str(ai_err):
-                    quota_exhausted = True
-            
-            # Fallback on any error to ensure resilience
-            logger.warning("AI Base analysis failed or API key was invalid. Falling back to dynamic local engine.")
+            base_result = await asyncio.to_thread(
+                client.analyze_full_resume, clean, job_description, experience_level, target_job
+            )
+            analysis['base_analysis'] = base_result if isinstance(base_result, dict) else base_result.model_dump()
+            ai_succeeded = True
+            logger.info("✅ AI base analysis succeeded.")
+        except Exception as ai_err:
+            logger.warning(f"AI base analysis failed: {ai_err}. Falling back to local engine.")
+            ai_succeeded = False
+
+        if not ai_succeeded:
+            # Fallback to local rule-based engine
             skills = parsed.get('skills', [])
             analysis = _generate_local_analysis(parsed, skills, experience_level, target_job)
             analysis['_quota_warning'] = (
                 "⚠️ The AI analysis engine fell back to local generation. "
                 "Please verify your API key is a valid Gemini API key starting with 'AIzaSy' in ai-service/.env."
             )
-        
+
         return {
             "filename": filename,
             "parsed_data": parsed,
             "analysis": analysis,
         }
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Error analyzing resume: {e}")
         raise HTTPException(status_code=500, detail=f"Error analyzing resume: {str(e)}")
     finally:
-        # Clean up temp file
-        if os.path.exists(tmp_path):
+        # Always clean up temp file
+        if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
 
 
@@ -591,7 +598,7 @@ async def analyze_deep(
             local_data = _generate_local_analysis(parsed, skills, "Experienced", target_job)
             
             # Merge local data into analysis for any keys that failed
-            for key in [k for k, _ in tasks]:
+            for key in [k for k, _, _args in tasks]:
                 if key not in analysis or "error" in analysis[key] or not analysis[key]:
                     analysis[key] = local_data.get(key, {})
 
