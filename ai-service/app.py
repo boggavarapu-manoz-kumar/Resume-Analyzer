@@ -552,28 +552,34 @@ async def analyze_deep(
         GeminiClient._circuit_broken = False
         client = GeminiClient()
         
-        tasks = [
-            ("persona", detect_persona, (client, clean)),
-            ("hiring_simulation", simulate_hiring, (client, clean, target_job)),
-            ("knowledge_graph", generate_knowledge_graph, (client, clean, target_job)),
-            ("market_demand", analyze_market_demand, (client, clean)),
-            ("project_evaluation", evaluate_projects, (client, clean)),
-            ("career_trajectory", generate_career_trajectory, (client, clean, target_job)),
-            ("personal_brand", analyze_personal_brand, (client, clean)),
-            ("interview_prediction", predict_interview_questions, (client, clean, target_job))
+        tasks_list = [
+            asyncio.to_thread(detect_persona, client, clean),
+            asyncio.to_thread(simulate_hiring, client, clean, target_job),
+            asyncio.to_thread(generate_knowledge_graph, client, clean, target_job),
+            asyncio.to_thread(analyze_market_demand, client, clean),
+            asyncio.to_thread(evaluate_projects, client, clean),
+            asyncio.to_thread(generate_career_trajectory, client, clean, target_job),
+            asyncio.to_thread(analyze_personal_brand, client, clean),
+            asyncio.to_thread(predict_interview_questions, client, clean, target_job)
+        ]
+        
+        keys = [
+            "persona", "hiring_simulation", "knowledge_graph", "market_demand", 
+            "project_evaluation", "career_trajectory", "personal_brand", "interview_prediction"
         ]
         
         analysis = {}
         any_failed = False
-        for key, func, args in tasks:
-            try:
-                result = await asyncio.to_thread(func, *args)
-                analysis[key] = result if isinstance(result, dict) else result.model_dump()
-                await asyncio.sleep(1) # Add a small 1-second delay
-            except Exception as ai_err:
-                print(f"Engine {key} failed: {ai_err}")
-                analysis[key] = {"error": str(ai_err)}
+        
+        results = await asyncio.gather(*tasks_list, return_exceptions=True)
+        
+        for key, result in zip(keys, results):
+            if isinstance(result, Exception):
+                print(f"Engine {key} failed: {result}")
+                analysis[key] = {"error": str(result)}
                 any_failed = True
+            else:
+                analysis[key] = result if isinstance(result, dict) else result.model_dump()
                     
         if any_failed:
             print("⚠️ Some AI engines failed in deep analysis — blending dynamic local analysis for those engines.")
