@@ -36,6 +36,7 @@ const ResumeAnalysis = () => {
   const [data, setData] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [deepAnalysisLoading, setDeepAnalysisLoading] = useState(false);
+  const [deepAnalysisError, setDeepAnalysisError] = useState(null);
   const navigate = useNavigate();
   const circleRef = useRef(null);
 
@@ -56,6 +57,7 @@ const ResumeAnalysis = () => {
 
   const fetchDeepAnalysis = async (resumeId, targetJob) => {
     setDeepAnalysisLoading(true);
+    setDeepAnalysisError(null);
     try {
       const response = await api.post(`/api/resumes/${resumeId}/analyze-deep`, {
         target_job: targetJob
@@ -73,7 +75,12 @@ const ResumeAnalysis = () => {
         return newData;
       });
     } catch (err) {
-      console.error("Failed to fetch deep analysis", err);
+      console.error("Failed to fetch deep analysis. Error:", err);
+      if (err.response) {
+        console.error("Response data:", err.response.data);
+        console.error("Response status:", err.response.status);
+      }
+      setDeepAnalysisError(`Deep analysis could not be completed. The AI service may be overloaded. (${err.message})`);
     } finally {
       setDeepAnalysisLoading(false);
     }
@@ -150,7 +157,7 @@ const ResumeAnalysis = () => {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-3">
             <UserCheck className="w-4 h-4" /> Detected Persona: {persona.persona || 'Candidate'}
           </div>
-          <h2 className="text-2xl font-bold mb-3 text-white">Target: {data.target_job || persona.primary_goal || 'Software Engineer'}</h2>
+          <h2 className="text-2xl font-bold mb-3 text-white">Target Role: {data.target_job || persona.primary_goal || persona.persona || 'Inferred from Resume'}</h2>
           <p className="text-slate-400 leading-relaxed mb-4">
             {base.summary_feedback || 'Your profile has been fully analyzed by our engine orchestrator.'}
           </p>
@@ -598,6 +605,12 @@ const ResumeAnalysis = () => {
 
       {/* Tab Content */}
       <div className="min-h-[400px]">
+        {deepAnalysisError && activeTab !== 'overview' && (
+          <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 text-center text-red-200 mb-6 animate-fade-up">
+            <span className="font-bold">⚠️ Error: </span> {deepAnalysisError}
+          </div>
+        )}
+        
         {activeTab === 'overview' && renderOverview()}
         {activeTab !== 'overview' && deepAnalysisLoading && (
           <div className="flex flex-col items-center justify-center h-64 space-y-4 animate-fade-up">

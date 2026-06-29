@@ -47,9 +47,18 @@ public class ResumeController {
             @PathVariable Long id,
             @RequestBody(required = false) Map<String, String> payload) throws Exception {
         
-        String targetJob = payload != null ? payload.get("target_job") : null;
-        Map<String, Object> result = resumeService.analyzeDeep(id, targetJob);
-        return ResponseEntity.ok(result);
+        System.out.println("====== analyzeDeep called for resume ID: " + id + " ======");
+        try {
+            String targetJob = payload != null ? payload.get("target_job") : null;
+            System.out.println("Target Job: " + targetJob);
+            Map<String, Object> result = resumeService.analyzeDeep(id, targetJob);
+            System.out.println("====== analyzeDeep SUCCESS ======");
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            System.err.println("====== analyzeDeep FAILED ======");
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @GetMapping("/my-resumes")

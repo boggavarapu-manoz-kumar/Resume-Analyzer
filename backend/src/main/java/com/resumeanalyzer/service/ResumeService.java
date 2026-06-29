@@ -83,7 +83,28 @@ public class ResumeService {
             }
         }
         
-        String category = (targetJob != null && !targetJob.isBlank()) ? targetJob : "Software Engineer";
+        String category = "Uncategorized";
+        if (targetJob != null && !targetJob.isBlank()) {
+            category = targetJob;
+        } else if (aiData.containsKey("analysis")) {
+            Map<?, ?> analysis = (Map<?, ?>) aiData.get("analysis");
+            if (analysis.containsKey("persona")) {
+                Map<?, ?> persona = (Map<?, ?>) analysis.get("persona");
+                if (persona.containsKey("primary_goal") && persona.get("primary_goal") != null) {
+                    category = persona.get("primary_goal").toString();
+                } else if (persona.containsKey("persona") && persona.get("persona") != null) {
+                    category = persona.get("persona").toString();
+                }
+            } else if (analysis.containsKey("base_analysis")) {
+                Map<?, ?> baseAnalysis = (Map<?, ?>) analysis.get("base_analysis");
+                if (baseAnalysis.containsKey("immediate_job_matches")) {
+                    List<?> matches = (List<?>) baseAnalysis.get("immediate_job_matches");
+                    if (matches != null && !matches.isEmpty()) {
+                        category = matches.get(0).toString();
+                    }
+                }
+            }
+        }
 
         // Persist resume record
         Resume resume = Resume.builder()
